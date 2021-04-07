@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -62,6 +63,7 @@ class EasyRefreshBox : ConstraintLayout {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        targetView.animation?.cancel()
         pullDownRecoveryAnim.cancel()
         pullUpRecoveryAnim.cancel()
         pullDownRefreshListener = null
@@ -80,9 +82,9 @@ class EasyRefreshBox : ConstraintLayout {
     private var snatchEvent = false
     private var needHandlePullDownEvent = false
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        "isPullDownRefreshing=${isPullDownRefreshing()} isLoadingMore=${isLoadingMore()}".log()
+//        "isPullDownRefreshing=${isPullDownRefreshing()} isLoadingMore=${isLoadingMore()}".log()
         if (isPullDownRefreshing() || isLoadingMore()) return true
-        "isCanDoRefresh= ${!isCanDoRefresh()} isCanDoLoadMore=${!isCanDoLoadMore()}".log()
+//        "isCanDoRefresh= ${!isCanDoRefresh()} isCanDoLoadMore=${!isCanDoLoadMore()}".log()
         if (!isCanDoRefresh() || !isCanDoLoadMore()) return false
         //能否继续向上滚动
         val targetViewCanScrollUp = targetView.canScrollVertically(-1)
@@ -92,6 +94,7 @@ class EasyRefreshBox : ConstraintLayout {
         //上拉到底后，canDown false canUp true
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                "Intercept ACTION_DOWN".log()
                 downY = event.y
                 lastMoveY = event.y
                 //每次一开始 都先不抢 给子view留着
@@ -99,24 +102,26 @@ class EasyRefreshBox : ConstraintLayout {
                 needHandlePullDownEvent = false
             }
             MotionEvent.ACTION_MOVE -> {
+                "Intercept ACTION_MOVE".log()
                 //只要滑起来发现能抢了 就抢，这里只是让子View不再接手move事件而已
                 val curY = event.y
                 if (curY - downY > 0) {
                     snatchEvent = !targetViewCanScrollUp
                     needHandlePullDownEvent = snatchEvent
                 } else {
-                    snatchEvent = false
-                    //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞中即可
+                    //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞即可
                     if (!targetViewCanScrollDown
                         && pullUpLoadMoreState == PullUpState.STATE_PREPARE
                     ) {
+                        snatchEvent = true
                         needShowLoadMoreView()
                     }
                 }
             }
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_CANCEL -> {
-                //有始有终 头尾都不抢,
+                "Intercept ACTION_UP || ACTION_CANCEL".log()
+                //此处抢和不抢并不影响EasyRefreshBox
                 snatchEvent = false
             }
         }
@@ -128,7 +133,7 @@ class EasyRefreshBox : ConstraintLayout {
      * 因为是抢的所以 不一定有down，down在onInterceptTouchEvent中也做初始化
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        //这将包含pullUp的拦截事件，需要过滤
+        //event将包含pullUp的拦截事件，需要过滤
         if (!needHandlePullDownEvent) return false
         if (!isCanDoRefresh()) {
             "last refresh task not completed,can not touch in this time".log()
@@ -145,7 +150,7 @@ class EasyRefreshBox : ConstraintLayout {
             }
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
-                "onTouchEvent.ACTION_UP".log()
+                "onTouchEvent.ACTION_UP || ACTION_CANCEL".log()
                 downY = 0F
                 lastMoveY = 0F
                 handlerFingerLeave()
@@ -162,7 +167,7 @@ class EasyRefreshBox : ConstraintLayout {
      */
     private fun onPullDownContentView(y: Float) {
         val translationY = if (y >= MAX_PULL_DOWN_Y) {
-            val offset = (y - MAX_PULL_DOWN_Y) * 0.15F
+            val offset = (y - MAX_PULL_DOWN_Y) * 0.35F
             offset + MAX_PULL_DOWN_Y
         } else {
             y
@@ -183,8 +188,22 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
     private fun handlerFingerLeave() {
+
         if (grandTotalPullDownDistance >= EFFECT_THRESHOLD_PULL_DOWN_Y) {
-            pullDownRefreshState = PullDownState.STATE_REFRESHING
+            //回弹一下先
+            val diff = grandTotalPullDownDistance - EFFECT_THRESHOLD_PULL_DOWN_Y
+            if (diff > 0) {
+                grandTotalPullDownDistance = EFFECT_THRESHOLD_PULL_DOWN_Y
+            }
+            pullDownRefreshState = PullDownState.STATE_PRE_REFRESHING
+            targetView.animate().translationY(EFFECT_THRESHOLD_PULL_DOWN_Y)
+                .setDuration(100)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .setUpdateListener {
+                    if (it.animatedFraction == 1.0F) {
+                        pullDownRefreshState = PullDownState.STATE_REFRESHING
+                    }
+                }
         } else {
             pullDownRefreshState = PullDownState.STATE_PREPARE
             pullDownRecoveryAnim.start()
@@ -205,6 +224,9 @@ class EasyRefreshBox : ConstraintLayout {
                 pullDownRefreshListener?.onEffective()
                 "松开刷新"
             }
+            PullDownState.STATE_PRE_REFRESHING -> {
+                "即将进入刷新..."
+            }
             PullDownState.STATE_REFRESHING -> {
                 pullDownRefreshListener?.onRefreshing()
                 "刷新中..."
@@ -218,8 +240,16 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
     private fun needShowLoadMoreView() {
-        targetView.translationY = -LOAD_MORE_CONTENT_HEIGHT
-        pullUpLoadMoreState = PullUpState.STATE_LOADING
+        pullUpLoadMoreState = PullUpState.STATE_PRELOADING
+        targetView.animate().translationY(-LOAD_MORE_CONTENT_HEIGHT)
+            .setDuration(100)
+            .setInterpolator(AccelerateInterpolator())
+            .setUpdateListener {
+                if(it.animatedFraction == 1F){
+                    pullUpLoadMoreState = PullUpState.STATE_LOADING
+                }
+            }
+            .start()
     }
 
     private fun handlerPullUpStatus() {
@@ -227,6 +257,9 @@ class EasyRefreshBox : ConstraintLayout {
             PullUpState.STATE_PREPARE -> {
                 pullUpLoadMoreListener?.onPrepare()
                 "准备加载"
+            }
+            PullUpState.STATE_PRELOADING -> {
+                "加载中..."
             }
             PullUpState.STATE_LOADING -> {
                 pullUpLoadMoreListener?.onLoading()
@@ -253,10 +286,11 @@ class EasyRefreshBox : ConstraintLayout {
             targetView.translationY = endY
         }
     }
+
     private inner class RecoveryBottomAnimListener : ValueAnimator.AnimatorUpdateListener {
         override fun onAnimationUpdate(animation: ValueAnimator) {
             val faction = animation.animatedFraction
-            var endY = if (faction >= 1F) {
+            var endY = if (faction == 1F) {
                 pullUpLoadMoreState = PullUpState.STATE_PREPARE
                 0F
             } else {
@@ -265,22 +299,27 @@ class EasyRefreshBox : ConstraintLayout {
             targetView.translationY = endY
         }
     }
+
     /**
      * 刷新完成后需要主动取消刷新状态
      */
     fun refreshComplete() {
         pullDownRefreshState = PullDownState.STATE_ENDING
+        targetView.animation?.cancel()
         pullDownRecoveryAnim.start()
     }
-    fun loadMoreComplete(){
+
+    fun loadMoreComplete() {
         pullUpLoadMoreState = PullUpState.STATE_ENDING
+        targetView.animation?.cancel()
         pullUpRecoveryAnim.start()
     }
 
     fun setRefreshable(able: Boolean) {
         pullDownRefreshable = able
     }
-    fun setLoadMoreAble(able:Boolean){
+
+    fun setLoadMoreAble(able: Boolean) {
         pullUpLoadMoreAble = able
     }
 
@@ -294,20 +333,22 @@ class EasyRefreshBox : ConstraintLayout {
 
     private fun isCanDoLoadMore(): Boolean {
         return pullUpLoadMoreAble
-                && pullUpLoadMoreState != PullUpState.STATE_LOADING
-                && pullUpLoadMoreState != PullUpState.STATE_ENDING
+                && pullUpLoadMoreState == PullUpState.STATE_PREPARE
     }
 
     private fun isCanDoRefresh(): Boolean {
         return pullDownRefreshable
                 && pullDownRefreshState != PullDownState.STATE_ENDING
                 && pullDownRefreshState != PullDownState.STATE_REFRESHING
+                && pullDownRefreshState != PullDownState.STATE_PRE_REFRESHING
     }
+
     interface PullUpLoadMoreListener {
         fun onPrepare()
         fun onLoading()
         fun onEnding()
     }
+
     interface PullDownRefreshListener {
         fun onPrepare()
 
@@ -322,14 +363,16 @@ class EasyRefreshBox : ConstraintLayout {
 
 enum class PullUpState(val v: Int) {
     STATE_PREPARE(0),
-    STATE_LOADING(1),
-    STATE_ENDING(2),
+    STATE_PRELOADING(1),
+    STATE_LOADING(2),
+    STATE_ENDING(3),
 }
 
 enum class PullDownState(val v: Int) {
     STATE_PREPARE(0),
     STATE_PULLING(1),
     STATE_EFFECTIVE(2),
+    STATE_PRE_REFRESHING(2),
     STATE_REFRESHING(3),
     STATE_ENDING(4),
 }

@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
                     for (i in 0..30) {
                         adapter.data.add("number - $i")
                     }
+                    adapter.notifyDataSetChanged()
                     easyRefreshBox.refreshComplete()
                 }, 3000L)
             }
