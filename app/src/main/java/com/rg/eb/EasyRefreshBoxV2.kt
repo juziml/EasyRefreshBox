@@ -19,7 +19,7 @@ import kotlin.math.abs
  *-
  *create by zhusw on 4/5/21 14:21
  */
-class EasyRefreshBox : ConstraintLayout {
+class EasyRefreshBoxV2 : ConstraintLayout {
     constructor(context: Context) : this(context, null)
     constructor(context: Context, attributeSet: AttributeSet?) : super(context, attributeSet)
 
@@ -378,3 +378,4 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
 }
+

@@ -12,7 +12,7 @@ class MainActivity : AppCompatActivity() {
     val nestedScrollView: NestedScrollView? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main_v2)
 
         val rv = findViewById<RecyclerView>(R.id.rv_content)
         val adapter = SimpleAdapter()
