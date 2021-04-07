@@ -9,12 +9,12 @@ import android.view.ViewConfiguration
 import android.view.animation.AccelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.core.widget.NestedScrollView
 import kotlin.math.abs
 
 /**
  *@Desc:
  *-
+ *-下拉刷新，上拉加载更多 事件管理容器
  *-
  *create by zhusw on 4/5/21 14:21
  */
@@ -50,7 +50,6 @@ class EasyRefreshBox : FrameLayout {
         pullDownRecoveryAnim.cancel()
     }
 
-
     override fun onFinishInflate() {
         super.onFinishInflate()
         targetView = findViewById(R.id.rv_content)
@@ -61,7 +60,11 @@ class EasyRefreshBox : FrameLayout {
     private var lastMoveY: Float = 0F
     private var snatchEvent = false
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        if (!isCanRefresh()) return false
+        if(isRefreshing()){
+            //正在刷新中，拦截全部事件
+            return true
+        }
+        if (!isCanDoRefresh()) return false
         //能否继续向上滚动
         val targetViewCanScrollUp = targetView.canScrollVertically(-1)
         //能否继续向下滚动
@@ -80,10 +83,14 @@ class EasyRefreshBox : FrameLayout {
             MotionEvent.ACTION_MOVE -> {
                 //只要滑起来发现能抢了 就抢，这里只是让子View不再接手move事件而已
                 val curY = event.y
-                snatchEvent = if (curY - downY > 0) {
-                    !targetViewCanScrollUp
+                if (curY - downY > 0) {
+                    snatchEvent = !targetViewCanScrollUp
                 } else {
-                    !targetViewCanScrollDown
+                    snatchEvent = false
+                    //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞中即可
+                    if (!targetViewCanScrollDown) {
+
+                    }
                 }
             }
             MotionEvent.ACTION_UP,
@@ -99,7 +106,7 @@ class EasyRefreshBox : FrameLayout {
      * 因为是抢的所以 不一定有down，down在onInterceptTouchEvent中也做初始化
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (!isCanRefresh()) {
+        if (!isCanDoRefresh()) {
             "last refresh task not completed,can not touch in this time".log()
             return true
         }
@@ -217,7 +224,11 @@ class EasyRefreshBox : FrameLayout {
         pullDownRefreshable = able
     }
 
-    private fun isCanRefresh(): Boolean {
+    fun isRefreshing(): Boolean {
+        return pullDownRefreshState == PullState.STATE_REFRESHING
+    }
+
+    private fun isCanDoRefresh(): Boolean {
         return pullDownRefreshable
                 && pullDownRefreshState != PullState.STATE_ENDING
                 && pullDownRefreshState != PullState.STATE_REFRESHING
