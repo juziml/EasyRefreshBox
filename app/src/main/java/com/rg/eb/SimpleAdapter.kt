@@ -12,6 +12,6 @@ import com.chad.library.adapter.base.viewholder.BaseViewHolder
 class SimpleAdapter: BaseQuickAdapter<String, BaseViewHolder> {
     constructor():super(R.layout.item_word,null)
     override fun convert(holder: BaseViewHolder, item: String) {
-        
+        holder.setText(R.id.iw_tv_name,item)
     }
 }

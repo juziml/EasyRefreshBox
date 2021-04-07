@@ -18,34 +18,59 @@ class MainActivity : AppCompatActivity() {
         val adapter = SimpleAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
-        for(i in 0..30){
-            adapter.data.add("number - i")
+        for (i in 0..30) {
+            adapter.data.add("number - $i")
         }
         adapter.notifyDataSetChanged()
 
         val easyRefreshBox = findViewById<EasyRefreshBox>(R.id.easyRefreshBox)
         easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBox.PullDownRefreshListener {
             override fun onPrepare() {
-                "onPrepare".log()
+                "pullDown onPrepare".log()
             }
 
             override fun onPulling(percent: Float) {
-                "onPulling".log()
+                "pullDown onPulling".log()
             }
 
             override fun onEffective() {
-                "onEffective".log()
+                "pullDown onEffective".log()
             }
 
             override fun onRefreshing() {
-                "onRefreshing".log()
+                "pullDown onRefreshing".log()
                 easyRefreshBox.postDelayed({
+                    adapter.data.clear()
+                    for (i in 0..30) {
+                        adapter.data.add("number - $i")
+                    }
                     easyRefreshBox.refreshComplete()
                 }, 3000L)
             }
 
             override fun onEnding() {
-                "onEnding".log()
+                "pullDown onEnding".log()
+            }
+
+        }
+        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBox.PullUpLoadMoreListener {
+            override fun onPrepare() {
+                "pullUp onPrepare".log()
+            }
+
+            override fun onLoading() {
+                "pullUp onLoading".log()
+                easyRefreshBox.postDelayed({
+                    for (i in adapter.data.size - 1..adapter.data.size + 10) {
+                        adapter.data.add("number - $i")
+                    }
+                    adapter.notifyDataSetChanged()
+                    easyRefreshBox.loadMoreComplete()
+                }, 2000L)
+            }
+
+            override fun onEnding() {
+                "pullUp onEnding".log()
             }
 
         }

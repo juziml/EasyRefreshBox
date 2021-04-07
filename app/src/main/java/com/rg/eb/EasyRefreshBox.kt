@@ -26,7 +26,7 @@ class EasyRefreshBox : ConstraintLayout {
         duration = 400
     }
     private val pullUpRecoveryAnim = ValueAnimator.ofFloat(0F, 1F).apply {
-        duration = 400
+        duration = 200
     }
     private val moveSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val LOAD_MORE_CONTENT_HEIGHT = 50.dp
@@ -47,6 +47,7 @@ class EasyRefreshBox : ConstraintLayout {
     private var pullUpLoadMoreAble: Boolean = true
 
     var pullDownRefreshListener: PullDownRefreshListener? = null
+    var pullUpLoadMoreListener: PullUpLoadMoreListener? = null
 
     init {
         pullDownRecoveryAnim.interpolator = AccelerateInterpolator()
@@ -62,6 +63,9 @@ class EasyRefreshBox : ConstraintLayout {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         pullDownRecoveryAnim.cancel()
+        pullUpRecoveryAnim.cancel()
+        pullDownRefreshListener = null
+        pullUpLoadMoreListener = null
     }
 
     override fun onFinishInflate() {
@@ -191,7 +195,7 @@ class EasyRefreshBox : ConstraintLayout {
         val desc = when (pullDownRefreshState) {
             PullDownState.STATE_PREPARE -> {
                 pullDownRefreshListener?.onPrepare()
-                "下拉刷新"
+                "准备下拉刷新"
             }
             PullDownState.STATE_PULLING -> {
                 pullDownRefreshListener?.onPulling(grandTotalPullDownDistance / EFFECT_THRESHOLD_PULL_DOWN_Y)
@@ -205,9 +209,9 @@ class EasyRefreshBox : ConstraintLayout {
                 pullDownRefreshListener?.onRefreshing()
                 "刷新中..."
             }
-            else -> {
-                pullDownRefreshListener?.onPrepare()
-                "下拉刷新"
+            PullDownState.STATE_ENDING -> {
+                pullDownRefreshListener?.onEnding()
+                "结束中..."
             }
         }
         tvRefresh.text = desc
@@ -221,16 +225,16 @@ class EasyRefreshBox : ConstraintLayout {
     private fun handlerPullUpStatus() {
         val desc = when (pullUpLoadMoreState) {
             PullUpState.STATE_PREPARE -> {
-                "加载更多"
+                pullUpLoadMoreListener?.onPrepare()
+                "准备加载"
             }
             PullUpState.STATE_LOADING -> {
+                pullUpLoadMoreListener?.onLoading()
                 "加载中..."
             }
             PullUpState.STATE_ENDING -> {
+                pullUpLoadMoreListener?.onEnding()
                 "结束加载中..."
-            }
-            else -> {
-                "加载中"
             }
         }
         tvLoadMore.text = desc
@@ -253,10 +257,10 @@ class EasyRefreshBox : ConstraintLayout {
         override fun onAnimationUpdate(animation: ValueAnimator) {
             val faction = animation.animatedFraction
             var endY = if (faction >= 1F) {
-                pullDownRefreshState = PullDownState.STATE_PREPARE
+                pullUpLoadMoreState = PullUpState.STATE_PREPARE
                 0F
             } else {
-                (1F - faction) * grandTotalPullDownDistance
+                (1F - faction) * -LOAD_MORE_CONTENT_HEIGHT
             }
             targetView.translationY = endY
         }
@@ -270,7 +274,7 @@ class EasyRefreshBox : ConstraintLayout {
     }
     fun loadMoreComplete(){
         pullUpLoadMoreState = PullUpState.STATE_ENDING
-
+        pullUpRecoveryAnim.start()
     }
 
     fun setRefreshable(able: Boolean) {
@@ -299,7 +303,11 @@ class EasyRefreshBox : ConstraintLayout {
                 && pullDownRefreshState != PullDownState.STATE_ENDING
                 && pullDownRefreshState != PullDownState.STATE_REFRESHING
     }
-
+    interface PullUpLoadMoreListener {
+        fun onPrepare()
+        fun onLoading()
+        fun onEnding()
+    }
     interface PullDownRefreshListener {
         fun onPrepare()
 
