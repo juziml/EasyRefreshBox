@@ -9,6 +9,7 @@ import android.view.ViewConfiguration
 import android.view.animation.AccelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.core.widget.NestedScrollView
 import kotlin.math.abs
 
 /**
@@ -25,7 +26,7 @@ class EasyRefreshBox : FrameLayout {
         duration = 400
     }
     private val moveSlop = ViewConfiguration.get(context).scaledTouchSlop
-    private lateinit var contentView: View
+    private lateinit var targetView: View
     private lateinit var tvState: TextView
     private var pullDownRefreshState = PullState.STATE_PREPARE
         set(value) {
@@ -53,9 +54,8 @@ class EasyRefreshBox : FrameLayout {
 
     override fun onFinishInflate() {
         super.onFinishInflate()
-        contentView = findViewById(R.id.v_content)
+        targetView = findViewById(R.id.rv_content)
         tvState = findViewById(R.id.tv_refreshState)
-
     }
 
     private var downY: Float = 0F
@@ -101,7 +101,7 @@ class EasyRefreshBox : FrameLayout {
             y
         }
         grandTotalPullDownDistance = translationY
-        contentView.translationY = translationY
+        targetView.translationY = translationY
         pullDownRefreshState = when {
             translationY < MIN_EFFECT_PULL_DOWN_Y -> {
                 PullState.STATE_PULLING
@@ -160,7 +160,7 @@ class EasyRefreshBox : FrameLayout {
             } else {
                 (1F - faction) * grandTotalPullDownDistance
             }
-            contentView.translationY = endY
+            targetView.translationY = endY
         }
     }
 
