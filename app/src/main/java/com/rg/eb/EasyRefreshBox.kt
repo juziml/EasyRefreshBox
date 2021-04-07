@@ -74,7 +74,13 @@ class EasyRefreshBox : ConstraintLayout {
         super.onFinishInflate()
         targetView = findViewById(R.id.rv_content)
         tvRefresh = findViewById(R.id.tv_refreshState)
+        if (tvRefresh.visibility == View.VISIBLE) {
+            tvRefresh.visibility = View.GONE
+        }
         tvLoadMore = findViewById(R.id.tv_loadMoreState)
+        if (tvLoadMore.visibility == View.VISIBLE) {
+            tvLoadMore.visibility = View.GONE
+        }
     }
 
     private var downY: Float = 0F
@@ -213,10 +219,16 @@ class EasyRefreshBox : ConstraintLayout {
     private fun handlerPullDownStatus() {
         val desc = when (pullDownRefreshState) {
             PullDownState.STATE_PREPARE -> {
+                if (tvRefresh.visibility != View.GONE) {
+                    tvRefresh.visibility = View.GONE
+                }
                 pullDownRefreshListener?.onPrepare()
                 "准备下拉刷新"
             }
             PullDownState.STATE_PULLING -> {
+                if (tvRefresh.visibility != View.VISIBLE) {
+                    tvRefresh.visibility = View.VISIBLE
+                }
                 pullDownRefreshListener?.onPulling(grandTotalPullDownDistance / EFFECT_THRESHOLD_PULL_DOWN_Y)
                 "继续下拉"
             }
@@ -240,12 +252,12 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
     private fun needShowLoadMoreView() {
-        pullUpLoadMoreState = PullUpState.STATE_PRELOADING
+        pullUpLoadMoreState = PullUpState.STATE_PRE_LOADING
         targetView.animate().translationY(-LOAD_MORE_CONTENT_HEIGHT)
             .setDuration(100)
             .setInterpolator(AccelerateInterpolator())
             .setUpdateListener {
-                if(it.animatedFraction == 1F){
+                if (it.animatedFraction == 1F) {
                     pullUpLoadMoreState = PullUpState.STATE_LOADING
                 }
             }
@@ -255,10 +267,16 @@ class EasyRefreshBox : ConstraintLayout {
     private fun handlerPullUpStatus() {
         val desc = when (pullUpLoadMoreState) {
             PullUpState.STATE_PREPARE -> {
+                if (tvLoadMore.visibility != View.GONE) {
+                    tvLoadMore.visibility = View.GONE
+                }
                 pullUpLoadMoreListener?.onPrepare()
                 "准备加载"
             }
-            PullUpState.STATE_PRELOADING -> {
+            PullUpState.STATE_PRE_LOADING -> {
+                if (tvLoadMore.visibility != View.VISIBLE) {
+                    tvLoadMore.visibility = View.VISIBLE
+                }
                 "加载中..."
             }
             PullUpState.STATE_LOADING -> {
@@ -363,7 +381,7 @@ class EasyRefreshBox : ConstraintLayout {
 
 enum class PullUpState(val v: Int) {
     STATE_PREPARE(0),
-    STATE_PRELOADING(1),
+    STATE_PRE_LOADING(1),
     STATE_LOADING(2),
     STATE_ENDING(3),
 }
