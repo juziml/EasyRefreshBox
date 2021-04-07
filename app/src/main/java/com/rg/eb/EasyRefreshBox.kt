@@ -44,7 +44,11 @@ class EasyRefreshBox : FrameLayout {
     private val EFFECT_THRESHOLD_PULL_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
 
-    public
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        pullDownRecoveryAnim.cancel()
+
+    }
 
 
     override fun onFinishInflate() {
