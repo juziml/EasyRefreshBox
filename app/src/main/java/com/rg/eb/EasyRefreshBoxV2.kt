@@ -117,7 +117,7 @@ class EasyRefreshBoxV2 : ConstraintLayout {
                 } else {
                     //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞即可
                     if (!targetViewCanScrollDown
-                        && pullUpLoadMoreState == PullUpState.STATE_PREPARE
+                            && pullUpLoadMoreState == PullUpState.STATE_PREPARE
                     ) {
                         snatchEvent = true
                         needShowLoadMoreView()
@@ -194,7 +194,6 @@ class EasyRefreshBoxV2 : ConstraintLayout {
     }
 
     private fun handlerFingerLeave() {
-
         if (grandTotalPullDownDistance >= EFFECT_THRESHOLD_PULL_DOWN_Y) {
             //回弹一下先
             val diff = grandTotalPullDownDistance - EFFECT_THRESHOLD_PULL_DOWN_Y
@@ -203,13 +202,13 @@ class EasyRefreshBoxV2 : ConstraintLayout {
             }
             pullDownRefreshState = PullDownState.STATE_PRE_REFRESHING
             targetView.animate().translationY(EFFECT_THRESHOLD_PULL_DOWN_Y)
-                .setDuration(100)
-                .setInterpolator(AccelerateDecelerateInterpolator())
-                .setUpdateListener {
-                    if (it.animatedFraction == 1.0F) {
-                        pullDownRefreshState = PullDownState.STATE_REFRESHING
+                    .setDuration(100)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .setUpdateListener {
+                        if (it.animatedFraction == 1.0F) {
+                            pullDownRefreshState = PullDownState.STATE_REFRESHING
+                        }
                     }
-                }
         } else {
             pullDownRefreshState = PullDownState.STATE_PREPARE
             pullDownRecoveryAnim.start()
@@ -253,15 +252,16 @@ class EasyRefreshBoxV2 : ConstraintLayout {
 
     private fun needShowLoadMoreView() {
         pullUpLoadMoreState = PullUpState.STATE_PRE_LOADING
-        targetView.animate().translationY(-LOAD_MORE_CONTENT_HEIGHT)
-            .setDuration(100)
-            .setInterpolator(AccelerateInterpolator())
-            .setUpdateListener {
-                if (it.animatedFraction == 1F) {
-                    pullUpLoadMoreState = PullUpState.STATE_LOADING
+        targetView.animate()
+                .translationY(-LOAD_MORE_CONTENT_HEIGHT)
+                .setDuration(100)
+                .setInterpolator(AccelerateInterpolator())
+                .setUpdateListener {
+                    if (it.animatedFraction == 1F) {
+                        pullUpLoadMoreState = PullUpState.STATE_LOADING
+                    }
                 }
-            }
-            .start()
+                .start()
     }
 
     private fun handlerPullUpStatus() {
@@ -369,7 +369,6 @@ class EasyRefreshBoxV2 : ConstraintLayout {
 
     interface PullDownRefreshListener {
         fun onPrepare()
-
         /**将提供一个百分比的值，达到100%时松开可触发刷新,便于处理一些下拉交互动画*/
         fun onPulling(percent: Float)
         fun onEffective()
