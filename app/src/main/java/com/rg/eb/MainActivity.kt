@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = SimpleAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
-        for(i in 0..100){
+        for(i in 0..30){
             adapter.data.add("number - i")
         }
         adapter.notifyDataSetChanged()

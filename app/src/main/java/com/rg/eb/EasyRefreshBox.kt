@@ -48,7 +48,6 @@ class EasyRefreshBox : FrameLayout {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         pullDownRecoveryAnim.cancel()
-
     }
 
 
@@ -60,6 +59,45 @@ class EasyRefreshBox : FrameLayout {
 
     private var downY: Float = 0F
     private var lastMoveY: Float = 0F
+    private var snatchEvent = false
+    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+        if (!isCanRefresh()) return false
+        //能否继续向上滚动
+        val targetViewCanScrollUp = targetView.canScrollVertically(-1)
+        //能否继续向下滚动
+        val targetViewCanScrollDown = targetView.canScrollVertically(1)
+
+        "canDown $targetViewCanScrollDown canUp $targetViewCanScrollUp".log()
+        //下拉到底后，canDown true canUp false
+        //上拉到底后，canDown false canUp true
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                downY = event.y
+                lastMoveY = event.y
+                //每次一开始 都先不抢 给子view留着
+                snatchEvent = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                //只要滑起来发现能抢了 就抢，这里只是让子View不再接手move事件而已
+                val curY = event.y
+                snatchEvent = if (curY - downY > 0) {
+                    !targetViewCanScrollUp
+                } else {
+                    !targetViewCanScrollDown
+                }
+            }
+            MotionEvent.ACTION_UP,
+            MotionEvent.ACTION_CANCEL -> {
+                //有始有终 头尾都不抢
+                snatchEvent = false
+            }
+        }
+        return snatchEvent
+    }
+
+    /**
+     * 因为是抢的所以 不一定有down，down在onInterceptTouchEvent中也做初始化
+     */
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!isCanRefresh()) {
             "last refresh task not completed,can not touch in this time".log()
@@ -67,10 +105,12 @@ class EasyRefreshBox : FrameLayout {
         }
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                "onTouchEvent.ACTION_CANCEL".log()
                 downY = event.y
                 lastMoveY = event.y
             }
             MotionEvent.ACTION_MOVE -> {
+                "onTouchEvent.ACTION_MOVE".log()
                 val moveY = event.y - downY
                 if (abs(moveY) > moveSlop) {
                     onPullDownContentView(moveY)
@@ -79,6 +119,7 @@ class EasyRefreshBox : FrameLayout {
             }
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
+                "onTouchEvent.ACTION_UP".log()
                 downY = 0F
                 lastMoveY = 0F
                 handlerFingerLeave()
