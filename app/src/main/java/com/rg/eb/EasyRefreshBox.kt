@@ -1,17 +1,14 @@
 package com.rg.eb
 
-import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
-import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.animation.AccelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
-import java.math.BigDecimal
-import java.text.DecimalFormat
 import kotlin.math.abs
 
 /**
@@ -21,28 +18,25 @@ import kotlin.math.abs
  *create by zhusw on 4/5/21 14:21
  */
 class EasyRefreshBox : FrameLayout {
-    constructor(context: Context) : this(context, null) {
-    }
-
-    constructor(context: Context, attributeSet: AttributeSet?) : super(context, attributeSet) {
-
-    }
+    constructor(context: Context) : this(context, null)
+    constructor(context: Context, attributeSet: AttributeSet?) : super(context, attributeSet)
 
     private val pullDownRecoveryAnim = ValueAnimator.ofFloat(0F, 1F).apply {
-        duration = 500
+        duration = 400
     }
     private val moveSlop = ViewConfiguration.get(context).scaledTouchSlop
     private lateinit var contentView: View
     private lateinit var tvState: TextView
-
-    override fun onFinishInflate() {
-        super.onFinishInflate()
-        contentView = findViewById(R.id.v_content)
-        tvState = findViewById(R.id.tv_refreshState)
-        tvState.tag = PullState.UN_START
+    private var pullDownRefreshState = PullState.STATE_PREPARE
+    set(value) {
+        field = value
+        handlerStatus()
     }
+    private var pullDownRefreshable: Boolean = true
+    var pullDownRefreshListener:PullDownRefreshListener? = null
 
     init {
+        pullDownRecoveryAnim.interpolator = AccelerateInterpolator()
         pullDownRecoveryAnim.addUpdateListener(RecoveryTopAnimListener())
     }
 
@@ -50,27 +44,42 @@ class EasyRefreshBox : FrameLayout {
     private val EFFECT_THRESHOLD_PULL_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
 
+    public
+
+
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+        contentView = findViewById(R.id.v_content)
+        tvState = findViewById(R.id.tv_refreshState)
+
+    }
+
     private var downY: Float = 0F
+    private var lastMoveY: Float = 0F
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val tag = tvState.tag as? PullState ?: PullState.UN_START
-        if (tag == PullState.REFRESHING) {
-            "刷新中,别乱动".log()
+        if (!isCanRefresh()) {
+            "last refresh task not completed,can not touch in this time".log()
             return true
         }
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 downY = event.y
+                lastMoveY = event.y
             }
             MotionEvent.ACTION_MOVE -> {
-                val moveY = event.y - downY
-                if (abs(moveY) > moveSlop) {
-                    grandTotalPullDownDistance = moveY
-                    onPullDownContentView(moveY)
-                }
+                val distance = event.y - lastMoveY
+//                if (abs(distance) > moveSlop) {
+                    val moveY = event.y - downY
+                    if (abs(moveY) > moveSlop) {
+                        onPullDownContentView(moveY)
+                    }
+//                }
+                lastMoveY = event.y
             }
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 downY = 0F
+                lastMoveY = 0F
                 handlerFingerLeave()
             }
         }
@@ -90,60 +99,62 @@ class EasyRefreshBox : FrameLayout {
         } else {
             y
         }
+        grandTotalPullDownDistance = translationY
         contentView.translationY = translationY
-        tvState.tag = when {
+        pullDownRefreshState = when {
             translationY < MIN_EFFECT_PULL_DOWN_Y -> {
-                PullState.PULLING
+                PullState.STATE_PULLING
             }
             translationY > EFFECT_THRESHOLD_PULL_DOWN_Y -> {
-                PullState.EFFECTIVE
+                PullState.STATE_EFFECTIVE
             }
             else -> {
-                PullState.PULLING
+                PullState.STATE_PULLING
             }
         }
-        handlerStatus()
     }
 
     private fun handlerFingerLeave() {
         if (grandTotalPullDownDistance >= EFFECT_THRESHOLD_PULL_DOWN_Y) {
-            tvState.tag = PullState.REFRESHING
-            handlerStatus()
+            pullDownRefreshState = PullState.STATE_REFRESHING
         } else {
-            tvState.tag = PullState.UN_START
+            pullDownRefreshState = PullState.STATE_PREPARE
             pullDownRecoveryAnim.start()
         }
     }
 
     private fun handlerStatus() {
-        val desc = when (tvState.tag as PullState) {
-            PullState.UN_START -> {
+        val desc = when (pullDownRefreshState) {
+            PullState.STATE_PREPARE -> {
+                pullDownRefreshListener?.onPrepare()
                 "下拉刷新"
             }
-            PullState.PULLING -> {
+            PullState.STATE_PULLING -> {
+                pullDownRefreshListener?.onPulling()
                 "继续下拉"
             }
-            PullState.EFFECTIVE -> {
+            PullState.STATE_EFFECTIVE -> {
+                pullDownRefreshListener?.onEffective()
                 "松开刷新"
             }
-            PullState.REFRESHING -> {
+            PullState.STATE_REFRESHING -> {
+                pullDownRefreshListener?.onRefreshing()
                 "刷新中..."
             }
             else -> {
+                pullDownRefreshListener?.onPrepare()
                 "下拉刷新"
             }
         }
         tvState.text = desc
     }
 
-    inner class RecoveryTopAnimListener : ValueAnimator.AnimatorUpdateListener {
+  private  inner class RecoveryTopAnimListener : ValueAnimator.AnimatorUpdateListener {
         override fun onAnimationUpdate(animation: ValueAnimator) {
-            val faction = animation.animatedValue as Float
-            "动画刷新中 $faction $grandTotalPullDownDistance".log()
-//            val bigDecimal = DecimalFormat("0.0").format(faction).toFloat()
+            val faction = animation.animatedFraction
             var endY = if (faction >= 1F) {
                 grandTotalPullDownDistance = 0F
-                tvState.tag = PullState.UN_START
+                pullDownRefreshState = PullState.STATE_PREPARE
                 0F
             } else {
                 (1F - faction) * grandTotalPullDownDistance
@@ -156,19 +167,35 @@ class EasyRefreshBox : FrameLayout {
      * 刷新完成后需要主动取消刷新状态
      */
     fun refreshComplete() {
+        pullDownRefreshState = PullState.STATE_ENDING
+        pullDownRecoveryAnim.start()
+    }
 
+    fun setRefreshable(able: Boolean) {
+        pullDownRefreshable = able
+    }
+
+    private fun isCanRefresh(): Boolean {
+        return pullDownRefreshable
+                && pullDownRefreshState != PullState.STATE_ENDING
+                && pullDownRefreshState != PullState.STATE_REFRESHING
     }
 
     interface PullDownRefreshListener {
+        fun onPrepare()
+        fun onPulling()
+        fun onEffective()
         fun onRefreshing()
+        fun onEnding()
     }
 
 }
 
 
 enum class PullState(val v: Int) {
-    UN_START(0),
-    PULLING(1),
-    EFFECTIVE(2),
-    REFRESHING(3),
+    STATE_PREPARE(0),
+    STATE_PULLING(1),
+    STATE_EFFECTIVE(2),
+    STATE_REFRESHING(3),
+    STATE_ENDING(4),
 }
