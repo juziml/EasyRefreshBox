@@ -14,15 +14,15 @@ class MainActivity : AppCompatActivity() {
         val easyRefreshBox = findViewById<EasyRefreshBox>(R.id.easyRefreshBox)
         easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBox.PullDownRefreshListener {
             override fun onPrepare() {
-
+                "onPrepare".log()
             }
 
-            override fun onPulling() {
-
+            override fun onPulling(percent: Float) {
+                "onPulling".log()
             }
 
             override fun onEffective() {
-
+                "onEffective".log()
             }
 
             override fun onRefreshing() {
@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onEnding() {
-
+                "onEnding".log()
             }
 
         }

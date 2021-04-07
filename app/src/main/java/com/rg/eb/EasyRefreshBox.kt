@@ -28,12 +28,12 @@ class EasyRefreshBox : FrameLayout {
     private lateinit var contentView: View
     private lateinit var tvState: TextView
     private var pullDownRefreshState = PullState.STATE_PREPARE
-    set(value) {
-        field = value
-        handlerStatus()
-    }
+        set(value) {
+            field = value
+            handlerStatus()
+        }
     private var pullDownRefreshable: Boolean = true
-    var pullDownRefreshListener:PullDownRefreshListener? = null
+    var pullDownRefreshListener: PullDownRefreshListener? = null
 
     init {
         pullDownRecoveryAnim.interpolator = AccelerateInterpolator()
@@ -67,13 +67,10 @@ class EasyRefreshBox : FrameLayout {
                 lastMoveY = event.y
             }
             MotionEvent.ACTION_MOVE -> {
-                val distance = event.y - lastMoveY
-//                if (abs(distance) > moveSlop) {
-                    val moveY = event.y - downY
-                    if (abs(moveY) > moveSlop) {
-                        onPullDownContentView(moveY)
-                    }
-//                }
+                val moveY = event.y - downY
+                if (abs(moveY) > moveSlop) {
+                    onPullDownContentView(moveY)
+                }
                 lastMoveY = event.y
             }
             MotionEvent.ACTION_CANCEL,
@@ -130,7 +127,7 @@ class EasyRefreshBox : FrameLayout {
                 "下拉刷新"
             }
             PullState.STATE_PULLING -> {
-                pullDownRefreshListener?.onPulling()
+                pullDownRefreshListener?.onPulling(grandTotalPullDownDistance / EFFECT_THRESHOLD_PULL_DOWN_Y)
                 "继续下拉"
             }
             PullState.STATE_EFFECTIVE -> {
@@ -149,7 +146,7 @@ class EasyRefreshBox : FrameLayout {
         tvState.text = desc
     }
 
-  private  inner class RecoveryTopAnimListener : ValueAnimator.AnimatorUpdateListener {
+    private inner class RecoveryTopAnimListener : ValueAnimator.AnimatorUpdateListener {
         override fun onAnimationUpdate(animation: ValueAnimator) {
             val faction = animation.animatedFraction
             var endY = if (faction >= 1F) {
@@ -183,7 +180,9 @@ class EasyRefreshBox : FrameLayout {
 
     interface PullDownRefreshListener {
         fun onPrepare()
-        fun onPulling()
+
+        /**将提供一个百分比的值，达到100%时松开可触发刷新,便于处理一些下拉交互动画*/
+        fun onPulling(percent: Float)
         fun onEffective()
         fun onRefreshing()
         fun onEnding()
