@@ -72,12 +72,12 @@ class EasyRefreshBoxV2 : ConstraintLayout {
 
     override fun onFinishInflate() {
         super.onFinishInflate()
-        targetView = findViewById(R.id.rv_content)
-        tvRefresh = findViewById(R.id.tv_refreshState)
+        targetView = findViewById(R.id.rv_contentV2)
+        tvRefresh = findViewById(R.id.tv_refreshStateV2)
         if (tvRefresh.visibility == View.VISIBLE) {
             tvRefresh.visibility = View.GONE
         }
-        tvLoadMore = findViewById(R.id.tv_loadMoreState)
+        tvLoadMore = findViewById(R.id.tv_loadMoreStateV2)
         if (tvLoadMore.visibility == View.VISIBLE) {
             tvLoadMore.visibility = View.GONE
         }

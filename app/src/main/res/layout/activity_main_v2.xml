@@ -8,7 +8,7 @@
     android:id="@+id/easyRefreshBox"
     tools:context=".MainActivity">
     <TextView
-        android:id="@+id/tv_refreshState"
+        android:id="@+id/tv_refreshStateV2"
         android:layout_width="match_parent"
         android:text="刷新状态"
         app:layout_constraintTop_toTopOf="parent"
@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:id="@+id/tv_loadMoreState"
+        android:id="@+id/tv_loadMoreStateV2"
         android:layout_width="match_parent"
         android:text="加载更多"
         android:textSize="40dp"
@@ -27,7 +27,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_height="wrap_content"/>
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_content"
+        android:id="@+id/rv_contentV2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#eeee90"
