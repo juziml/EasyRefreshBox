@@ -46,7 +46,7 @@ class EasyRefreshBox : FrameLayout {
         pullDownRecoveryAnim.addUpdateListener(RecoveryTopAnimListener())
     }
 
-    private val MIN_EFFECT_PULL_DOWN_Y: Float = 20.dp
+    private val MIN_EFFECT_PULL_DOWN_Y: Float = 50.dp
     private val EFFECT_THRESHOLD_PULL_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
 
@@ -65,13 +65,13 @@ class EasyRefreshBox : FrameLayout {
                 val moveY = event.y - downY
                 if (abs(moveY) > moveSlop) {
                     grandTotalPullDownDistance = moveY
-                    moveContentView(moveY)
+                    onPullDownContentView(moveY)
                 }
             }
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 downY = 0F
-                recoveryTop()
+                handlerFingerLeave()
             }
         }
         return true
@@ -83,7 +83,7 @@ class EasyRefreshBox : FrameLayout {
      * 使用translation 直接操作内容view
      * 这样只需要操作内容view的位置，而不用关心与其他同级view的状态
      */
-    private fun moveContentView(y: Float) {
+    private fun onPullDownContentView(y: Float) {
         val translationY = if (y >= MAX_PULL_DOWN_Y) {
             val offset = (y - MAX_PULL_DOWN_Y) * 0.15F
             offset + MAX_PULL_DOWN_Y
@@ -105,15 +105,14 @@ class EasyRefreshBox : FrameLayout {
         handlerStatus()
     }
 
-    private fun recoveryTop() {
+    private fun handlerFingerLeave() {
         if (grandTotalPullDownDistance >= EFFECT_THRESHOLD_PULL_DOWN_Y) {
             tvState.tag = PullState.REFRESHING
-            pullDownRecoveryAnim.start()
+            handlerStatus()
         } else {
             tvState.tag = PullState.UN_START
-            moveContentView(0F)
+            pullDownRecoveryAnim.start()
         }
-        handlerStatus()
     }
 
     private fun handlerStatus() {
@@ -128,7 +127,7 @@ class EasyRefreshBox : FrameLayout {
                 "松开刷新"
             }
             PullState.REFRESHING -> {
-                "刷新中"
+                "刷新中..."
             }
             else -> {
                 "下拉刷新"
@@ -147,12 +146,25 @@ class EasyRefreshBox : FrameLayout {
                 tvState.tag = PullState.UN_START
                 0F
             } else {
-                grandTotalPullDownDistance * faction
+                (1F - faction) * grandTotalPullDownDistance
             }
-            moveContentView(endY)
+            contentView.translationY = endY
         }
     }
+
+    /**
+     * 刷新完成后需要主动取消刷新状态
+     */
+    fun refreshComplete() {
+
+    }
+
+    interface PullDownRefreshListener {
+        fun onRefreshing()
+    }
+
 }
+
 
 enum class PullState(val v: Int) {
     UN_START(0),
