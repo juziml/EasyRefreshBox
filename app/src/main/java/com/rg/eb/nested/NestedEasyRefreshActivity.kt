@@ -41,7 +41,33 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             override fun onLoading() {
                 easyRefreshLayout.postDelayed({
                     setNewData()
-                    easyRefreshLayout.pullDownRefreshComplete()
+                    easyRefreshLayout.pullDownLoadComplete()
+                },2000L)
+
+            }
+            override fun onEnding() {
+
+            }
+
+            override fun onCanceling() {
+
+            }
+        }
+        easyRefreshLayout.pullUpRefreshListener = object :PullDownRefreshListener{
+
+            override fun onReset() {
+
+            }
+
+            override fun onPulling(percent: Float) {
+            }
+            override fun onWaitToRelease() {
+
+            }
+            override fun onLoading() {
+                easyRefreshLayout.postDelayed({
+                    addData()
+                    easyRefreshLayout.pullUpLoadComplete()
                 },2000L)
 
             }
@@ -57,10 +83,16 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
     fun setNewData() {
         adapter.data.clear()
-        for (i in 0..30) {
+        for (i in 0..10) {
             adapter.data.add("number - $i")
         }
         adapter.notifyDataSetChanged()
     }
 
+    fun addData() {
+        for (i in 0..10) {
+            adapter.data.add("number - $i")
+        }
+        adapter.notifyDataSetChanged()
+    }
 }

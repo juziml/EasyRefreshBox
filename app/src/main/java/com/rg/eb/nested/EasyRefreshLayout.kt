@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.rg.eb.R
 import com.rg.eb.dp
 import com.rg.eb.log
+import java.lang.Math.abs
 
 /**
  *@Desc:
@@ -29,6 +30,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     var openPullUpLoadMore = false
     private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
     var pullDownRefreshListener: PullDownRefreshListener? = null
+    var pullUpRefreshListener: PullDownRefreshListener? = null
 
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
@@ -37,12 +39,12 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private lateinit var tvBottomState: TextView
 
     private var totalPullDownY = 0F
-    private var pullDownState: PullDownState = PullDownState.STATE_UN_START
+    private var pullDownState: PullState = PullState.STATE_UN_START
         private set(value) {
             field = value
             handlerPullDownState(value)
         }
-    private var pullUpState: PullDownState = PullDownState.STATE_UN_START
+    private var pullUpState: PullState = PullState.STATE_UN_START
         private set(value) {
             field = value
             handlerPullUpState(value)
@@ -57,8 +59,8 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private val RELEASE_TO_REFRESH_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
 
-    private val RELEASE_TO_LOAD_UP_Y = (-100).dp
-    private val MAX_PULL_UP_Y = -(150).dp
+    private val RELEASE_TO_LOAD_UP_Y = 100.dp
+    private val MAX_PULL_UP_Y =150.dp
     override fun onFinishInflate() {
         super.onFinishInflate()
         tvTopState = findViewById(R.id.aer_fl_top)
@@ -100,27 +102,34 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         val canPullDown = (openPullDownRefresh
                 && !targetViewPullDownLimit
                 && dy < 0)
-                || (dy > 0 && pullDownState.value > PullDownState.STATE_UN_START.value)
-
+                || (dy > 0 && (pullUpState == PullState.STATE_UN_START
+                && pullDownState.value > PullState.STATE_UN_START.value))
         val canPullUp = (openPullUpLoadMore
                 && !targetViewPullUpnLimit
                 && dy > 0)
-                || (dy < 0 && pullUpState.value > PullDownState.STATE_UN_START.value)
-
-
+                || (dy < 0 && (pullDownState == PullState.STATE_UN_START
+                && pullUpState.value > PullState.STATE_UN_START.value))
         if (canPullDown) {
             val currY = handlerPullDownRefresh(-dy.toFloat())
             when {
                 currY < RELEASE_TO_REFRESH_DOWN_Y -> {
-                    pullDownState = PullDownState.STATE_PULLING
+                    pullDownState = PullState.STATE_PULLING
                 }
-                currY >= RELEASE_TO_REFRESH_DOWN_Y && pullDownState == PullDownState.STATE_PULLING -> {
-                    pullDownState = PullDownState.STATE_WAIT_TO_RELEASE
+                currY >= RELEASE_TO_REFRESH_DOWN_Y && pullDownState == PullState.STATE_PULLING -> {
+                    pullDownState = PullState.STATE_WAIT_TO_RELEASE
                 }
             }
             consumed[1] = dy
         } else if (canPullUp) {
-
+            val currY = handlerPullUpRefresh(dy.toFloat())
+            when {
+                abs(currY) < RELEASE_TO_LOAD_UP_Y -> {
+                    pullUpState = PullState.STATE_PULLING
+                }
+                abs(currY) >= RELEASE_TO_LOAD_UP_Y && pullDownState == PullState.STATE_PULLING -> {
+                    pullUpState = PullState.STATE_WAIT_TO_RELEASE
+                }
+            }
             consumed[1] = dy
         }
     }
@@ -131,24 +140,31 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     override fun onStopNestedScroll(target: View, type: Int) {
         nestedScrollingParentHelper.onStopNestedScroll(target, type)
         totalPullDownY = 0F
-        "onStopNestedScroll pullDownState=$pullDownState".log(TAG)
+        "onStopNestedScroll pullState=$pullDownState".log(TAG)
         when (pullDownState) {
-            PullDownState.STATE_WAIT_TO_RELEASE -> {
+            PullState.STATE_WAIT_TO_RELEASE -> {
                 //处理回弹出
-                recoveryToTopMaxDistance()
+                reboundToTopHoldingPosition()
             }
-            PullDownState.STATE_PULLING -> {
+            PullState.STATE_PULLING -> {
+                quickCancelState()
+            }
+        }
+        when (pullDownState) {
+            PullState.STATE_WAIT_TO_RELEASE -> {
                 //处理回弹出
+                reboundToBottomHoldingPosition()
+            }
+            PullState.STATE_PULLING -> {
                 quickCancelState()
             }
         }
     }
 
     /**
-     * 回弹至固定的刷新的位置
-     * 回弹结束进入刷新状态 等待回调
+     * 下拉回弹
      */
-    private fun recoveryToTopMaxDistance() {
+    private fun reboundToTopHoldingPosition() {
         targetView.animation?.cancel()
         val currY = targetView.translationY
         val gap = currY - RELEASE_TO_REFRESH_DOWN_Y
@@ -164,26 +180,49 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
                     if (it.animatedFraction == 1F) {
-                        pullDownState = PullDownState.STATE_LOADING
+                        pullDownState = PullState.STATE_LOADING
                     }
                 }
                 .start()
     }
-
+    /**
+     * 上拉回弹
+     */
+    private fun reboundToBottomHoldingPosition() {
+        targetView.animation?.cancel()
+        val currY = abs(targetView.translationY)
+        val gap = currY - RELEASE_TO_LOAD_UP_Y
+        val factor = gap / (MAX_PULL_UP_Y - RELEASE_TO_LOAD_UP_Y)
+        val duration: Long = if (factor > 1) {
+            RECOVERY_REBOUND_TO_REFRESH_POSITION
+        } else {
+            factor.toLong() * RECOVERY_REBOUND_TO_REFRESH_POSITION
+        }
+        targetView.animate()
+                .translationY(-RELEASE_TO_LOAD_UP_Y)
+                .setDuration(duration)
+                .setInterpolator(AccelerateInterpolator())
+                .setUpdateListener {
+                    if (it.animatedFraction == 1F) {
+                        pullDownState = PullState.STATE_LOADING
+                    }
+                }
+                .start()
+    }
     /**
      * 一些未触发刷新or 加载的情况强制回到起点
      */
     private fun quickCancelState() {
-        pullDownState = PullDownState.STATE_CANCELING
-        pullUpState = PullDownState.STATE_CANCELING
+        pullDownState = PullState.STATE_CANCELING
+        pullUpState = PullState.STATE_CANCELING
         targetView.animate()
                 .translationY(0F)
                 .setDuration(100)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
                     if (it.animatedFraction == 1F) {
-                        pullDownState = PullDownState.STATE_UN_START
-                        pullUpState = PullDownState.STATE_UN_START
+                        pullDownState = PullState.STATE_UN_START
+                        pullUpState = PullState.STATE_UN_START
                     }
                 }
                 .start()
@@ -193,101 +232,112 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
      * 下移 targetView
      * @param translationY 必须是正值
      */
-    private fun handlerPullDownRefresh(translationY: Float): Float {
+    private fun handlerPullDownRefresh(dy: Float): Float {
         val oldTranslateY = targetView.translationY
-        val newTranslateY = if (oldTranslateY >= MAX_PULL_DOWN_Y) {
-            translationY * DAMP_FACTOR_L3 + oldTranslateY
-        } else if (oldTranslateY >= RELEASE_TO_REFRESH_DOWN_Y) {
-            translationY * DAMP_FACTOR_L2 + oldTranslateY
-        } else {
-            translationY * DAMP_FACTOR_L1 + oldTranslateY
+        val newTranslateY = when {
+            oldTranslateY >= MAX_PULL_DOWN_Y -> {
+                dy * DAMP_FACTOR_L3 + oldTranslateY
+            }
+            oldTranslateY >= RELEASE_TO_REFRESH_DOWN_Y -> {
+                dy * DAMP_FACTOR_L2 + oldTranslateY
+            }
+            else -> {
+                dy * DAMP_FACTOR_L1 + oldTranslateY
+            }
         }
-        if (newTranslateY > 0 && oldTranslateY != newTranslateY) {
+        if (newTranslateY >= 0 && oldTranslateY != newTranslateY) {
             targetView.translationY = newTranslateY
-            return newTranslateY
         }
-        return 0F
+        return targetView.translationY
     }
 
     /**
      * 上移 targetView
      * @param translationY 必须是负值
      */
-    private fun handlerPullUpRefresh(dy: Int): Float {
+    private fun handlerPullUpRefresh(dy: Float): Float {
         val oldTranslateY = targetView.translationY
-        val newTranslateY = if (oldTranslateY >= MAX_PULL_DOWN_Y) {
-            translationY * DAMP_FACTOR_L3 + oldTranslateY
-        } else if (oldTranslateY >= RELEASE_TO_REFRESH_DOWN_Y) {
-            translationY * DAMP_FACTOR_L2 + oldTranslateY
-        } else {
-            translationY * DAMP_FACTOR_L1 + oldTranslateY
+        //转正便于计算区间
+        val newTranslateY = when {
+            abs(oldTranslateY) >= MAX_PULL_UP_Y -> {
+                dy * DAMP_FACTOR_L3 + oldTranslateY
+            }
+            abs(oldTranslateY) >= RELEASE_TO_LOAD_UP_Y -> {
+                dy * DAMP_FACTOR_L2 + oldTranslateY
+            }
+            else -> {
+                dy * DAMP_FACTOR_L1 + oldTranslateY
+            }
         }
-        if (newTranslateY > 0 && oldTranslateY != newTranslateY) {
+        if (newTranslateY <= 0 && oldTranslateY != newTranslateY) {
             targetView.translationY = newTranslateY
-            return newTranslateY
         }
-        return 0F
+        return targetView.translationY
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         //处于loading 状态以上时 屏蔽所有事件
-        if (pullDownState.value >= PullDownState.STATE_LOADING.value) {
+        if (pullDownState.value >= PullState.STATE_LOADING.value) {
             return true
         }
-        if (pullUpState.value >= PullDownState.STATE_LOADING.value) {
+        if (pullUpState.value >= PullState.STATE_LOADING.value) {
             return true
         }
         return super.onInterceptTouchEvent(ev)
     }
 
-    private fun handlerPullUpState(value: PullDownState) {
+    private fun handlerPullUpState(value: PullState) {
         when (value) {
-            PullDownState.STATE_UN_START -> {
+            PullState.STATE_UN_START -> {
                 tvBottomState.text = "STATE_UN_START"
-                pullDownRefreshListener?.onReset()
+                pullUpRefreshListener?.onReset()
             }
-            PullDownState.STATE_PULLING -> {
+            PullState.STATE_PULLING -> {
                 tvBottomState.text = "STATE_PULLING"
-                pullDownRefreshListener?.onPulling(targetView.translationY)
+                pullUpRefreshListener?.onPulling(targetView.translationY)
             }
-            PullDownState.STATE_WAIT_TO_RELEASE -> {
+            PullState.STATE_WAIT_TO_RELEASE -> {
                 tvBottomState.text = "STATE_WAIT_TO_RELEASE"
-                pullDownRefreshListener?.onWaitToRelease()
+                pullUpRefreshListener?.onWaitToRelease()
             }
-            PullDownState.STATE_LOADING -> {
+            PullState.STATE_LOADING -> {
                 tvBottomState.text = "STATE_LOADING"
-                pullDownRefreshListener?.onLoading()
+                pullUpRefreshListener?.onLoading()
             }
-            PullDownState.STATE_ENDING -> {
+            PullState.STATE_ENDING -> {
                 tvBottomState.text = "STATE_ENDING"
-                pullDownRefreshListener?.onEnding()
+                pullUpRefreshListener?.onEnding()
+            }
+            PullState.STATE_CANCELING -> {
+                tvTopState.text = "STATE_CANCELING"
+                pullUpRefreshListener?.onCanceling()
             }
         }
     }
 
-    private fun handlerPullDownState(value: PullDownState) {
+    private fun handlerPullDownState(value: PullState) {
         when (value) {
-            PullDownState.STATE_UN_START -> {
+            PullState.STATE_UN_START -> {
                 tvTopState.text = "STATE_UN_START"
                 pullDownRefreshListener?.onReset()
             }
-            PullDownState.STATE_PULLING -> {
+            PullState.STATE_PULLING -> {
                 tvTopState.text = "STATE_PULLING"
                 pullDownRefreshListener?.onPulling(targetView.translationY)
             }
-            PullDownState.STATE_WAIT_TO_RELEASE -> {
+            PullState.STATE_WAIT_TO_RELEASE -> {
                 tvTopState.text = "STATE_WAIT_TO_RELEASE"
                 pullDownRefreshListener?.onWaitToRelease()
             }
-            PullDownState.STATE_LOADING -> {
+            PullState.STATE_LOADING -> {
                 tvTopState.text = "STATE_LOADING"
                 pullDownRefreshListener?.onLoading()
             }
-            PullDownState.STATE_ENDING -> {
+            PullState.STATE_ENDING -> {
                 tvTopState.text = "STATE_ENDING"
                 pullDownRefreshListener?.onEnding()
             }
-            PullDownState.STATE_CANCELING -> {
+            PullState.STATE_CANCELING -> {
                 tvTopState.text = "STATE_CANCELING"
                 pullDownRefreshListener?.onCanceling()
             }
@@ -297,11 +347,11 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     /**
      * 刷新完成，进行复位 仅在刷新时生效
      */
-    fun pullDownRefreshComplete() {
-        if (pullDownState != PullDownState.STATE_LOADING) {
+    fun pullDownLoadComplete() {
+        if (pullDownState != PullState.STATE_LOADING) {
             return
         }
-        pullDownState = PullDownState.STATE_ENDING
+        pullDownState = PullState.STATE_ENDING
         targetView.animation?.cancel()
         //关键性状态设置，不依赖于动画 当前场景下动画将被随意取消
         targetView.animate()
@@ -309,7 +359,25 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 .setDuration(RECOVERY_REBOUND_TO_UNSTART)
                 .setUpdateListener {
                     if (it.animatedFraction == 1F) {
-                        pullDownState = PullDownState.STATE_UN_START
+                        pullDownState = PullState.STATE_UN_START
+                    }
+                }
+                .setInterpolator(AccelerateInterpolator())
+                .start()
+    }
+    fun pullUpLoadComplete() {
+        if (pullUpState != PullState.STATE_LOADING) {
+            return
+        }
+        pullUpState = PullState.STATE_ENDING
+        targetView.animation?.cancel()
+        //关键性状态设置，不依赖于动画 当前场景下动画将被随意取消
+        targetView.animate()
+                .translationY(0F)
+                .setDuration(RECOVERY_REBOUND_TO_UNSTART)
+                .setUpdateListener {
+                    if (it.animatedFraction == 1F) {
+                        pullUpState = PullState.STATE_UN_START
                     }
                 }
                 .setInterpolator(AccelerateInterpolator())

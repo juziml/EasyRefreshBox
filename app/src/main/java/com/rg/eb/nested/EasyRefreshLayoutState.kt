@@ -5,7 +5,7 @@ package com.rg.eb.nested
  *- 包含内部状态与对外回调状态
  *create by zhusw on 4/8/21 17:18
  */
-internal enum class PullDownState(val value: Int) {
+internal enum class PullState(val value: Int) {
     STATE_UN_START(0),
     STATE_PULLING(1),
     STATE_WAIT_TO_RELEASE(2),
