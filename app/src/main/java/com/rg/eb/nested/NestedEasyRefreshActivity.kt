@@ -48,6 +48,10 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             override fun onEnding() {
 
             }
+
+            override fun onCanceling() {
+
+            }
         }
     }
 

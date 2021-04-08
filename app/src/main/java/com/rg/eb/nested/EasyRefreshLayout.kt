@@ -139,7 +139,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             }
             PullDownState.STATE_PULLING -> {
                 //处理回弹出
-                hardRecovery()
+                quickCancelState()
             }
         }
     }
@@ -173,9 +173,9 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     /**
      * 一些未触发刷新or 加载的情况强制回到起点
      */
-    private fun hardRecovery() {
-        pullDownState = PullDownState.STATE_HARD_ENDING
-        pullUpState = PullDownState.STATE_HARD_ENDING
+    private fun quickCancelState() {
+        pullDownState = PullDownState.STATE_CANCELING
+        pullUpState = PullDownState.STATE_CANCELING
         targetView.animate()
                 .translationY(0F)
                 .setDuration(100)
@@ -286,6 +286,10 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             PullDownState.STATE_ENDING -> {
                 tvTopState.text = "STATE_ENDING"
                 pullDownRefreshListener?.onEnding()
+            }
+            PullDownState.STATE_CANCELING -> {
+                tvTopState.text = "STATE_CANCELING"
+                pullDownRefreshListener?.onCanceling()
             }
         }
     }

@@ -11,7 +11,7 @@ internal enum class PullDownState(val value: Int) {
     STATE_WAIT_TO_RELEASE(2),
     STATE_LOADING(3),
     STATE_ENDING(4),
-    STATE_HARD_ENDING(5)
+    STATE_CANCELING(5)
 }
 
 interface PullDownRefreshListener {
@@ -23,5 +23,6 @@ interface PullDownRefreshListener {
     fun onWaitToRelease()
     fun onLoading()
     fun onEnding()
+    fun onCanceling()
 
 }
