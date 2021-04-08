@@ -1,4 +1,4 @@
-package com.rg.eb
+package com.rg.eb.nested
 
 import android.content.Context
 import android.util.AttributeSet
@@ -8,6 +8,7 @@ import androidx.core.view.NestedScrollingParent2
 import androidx.core.view.NestedScrollingParentHelper
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.rg.eb.log
 
 /**
  *@Desc:
@@ -18,7 +19,6 @@ class NestedScrollingSimpleView(context: Context, attributeSet: AttributeSet) : 
     private lateinit var mHeader: View
     private lateinit var mTarget: View
     private var mHeaderHeight = 0
-
     private val mNestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
     private var rvScrollCount = 0F
     override fun onFinishInflate() {
@@ -90,7 +90,6 @@ class NestedScrollingSimpleView(context: Context, attributeSet: AttributeSet) : 
             dyUnconsumed: Int,
             type: Int
     ) {
-
 
     }
 

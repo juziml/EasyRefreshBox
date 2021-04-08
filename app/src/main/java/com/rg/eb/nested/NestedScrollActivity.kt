@@ -1,9 +1,11 @@
-package com.rg.eb
+package com.rg.eb.nested
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.rg.eb.R
+import com.rg.eb.SimpleAdapter
 
 /**
  *@Desc:
