@@ -20,7 +20,6 @@ class NestedScrollingSimpleView(context: Context, attributeSet: AttributeSet) : 
     private lateinit var mTarget: View
     private var mHeaderHeight = 0
     private val mNestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
-    private var rvScrollCount = 0F
     override fun onFinishInflate() {
         super.onFinishInflate()
         if (childCount > 0) {
@@ -33,12 +32,6 @@ class NestedScrollingSimpleView(context: Context, attributeSet: AttributeSet) : 
                 }
             }
         }
-        val rv = mTarget as RecyclerView
-        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                rvScrollCount+= dy
-            }
-        })
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -74,7 +67,7 @@ class NestedScrollingSimpleView(context: Context, attributeSet: AttributeSet) : 
         // dy大于0说明在向上滑动，此时需要判断header是不是还能显示
         val canScrollUp = dy > 0 && mHeaderHeight > scrollY
         // dy小于0说明在向下滑动，此时需要判断header是不是已经显示完整
-        val canScrollDown = dy < 0 && rvScrollCount<=0F
+        val canScrollDown = dy < 0 && !targetCanDown
         if (canScrollUp || canScrollDown) {
             scrollBy(0, dy)
             consumed[1] = dy
