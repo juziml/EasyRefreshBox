@@ -38,7 +38,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             override fun onWaitToRelease() {
 
             }
-            override fun onRefreshing() {
+            override fun onLoading() {
                 easyRefreshLayout.postDelayed({
                     setNewData()
                     easyRefreshLayout.pullDownRefreshComplete()
