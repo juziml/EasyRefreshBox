@@ -12,9 +12,9 @@ class MainActivity : AppCompatActivity() {
     val nestedScrollView: NestedScrollView? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main_v2)
+        setContentView(R.layout.activity_main)
 
-        val rv = findViewById<RecyclerView>(R.id.rv_contentV2)
+        val rv = findViewById<RecyclerView>(R.id.rv_content)
         val adapter = SimpleAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
@@ -23,8 +23,8 @@ class MainActivity : AppCompatActivity() {
         }
         adapter.notifyDataSetChanged()
 
-        val easyRefreshBox = findViewById<EasyRefreshBoxV2>(R.id.easyRefreshBoxV2)
-        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBoxV2.PullDownRefreshListener {
+        val easyRefreshBox = findViewById<EasyRefreshBox>(R.id.easyRefreshBox)
+        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBox.PullDownRefreshListener {
             override fun onPrepare() {
                 "pullDown onPrepare".log()
             }
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBoxV2.PullUpLoadMoreListener {
+        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBox.PullUpLoadMoreListener {
             override fun onPrepare() {
                 "pullUp onPrepare".log()
             }
