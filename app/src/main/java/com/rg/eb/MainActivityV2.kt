@@ -7,15 +7,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
-class MainActivity : AppCompatActivity() {
+class MainActivityV2 : AppCompatActivity() {
     val swipeRefreshLayout: SwipeRefreshLayout? = null
     val nestedScrollView: NestedScrollView? = null
     val recyclerView: RecyclerView? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main_v2)
 
-        val rv = findViewById<RecyclerView>(R.id.rv_content)
+        val rv = findViewById<RecyclerView>(R.id.rv_contentV2)
         val adapter = SimpleAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
@@ -28,11 +28,12 @@ class MainActivity : AppCompatActivity() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 scrollY += dy
+
                 "RecyclerView.OnScrollListener. onScrolled outRecordY=$scrollY  rv.scrollY=${rv.scrollY}".log()
             }
         })
-        val easyRefreshBox = findViewById<EasyRefreshBox>(R.id.easyRefreshBox)
-        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBox.PullDownRefreshListener {
+        val easyRefreshBox = findViewById<EasyRefreshBoxV2>(R.id.easyRefreshBoxV2)
+        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBoxV2.PullDownRefreshListener {
             override fun onPrepare() {
                 "pullDown onPrepare".log()
             }
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBox.PullUpLoadMoreListener {
+        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBoxV2.PullUpLoadMoreListener {
             override fun onPrepare() {
                 "pullUp onPrepare".log()
             }
