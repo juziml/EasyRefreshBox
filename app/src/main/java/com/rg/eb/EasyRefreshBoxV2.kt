@@ -84,9 +84,9 @@ class EasyRefreshBoxV2 : ConstraintLayout {
     }
 
     private var downY: Float = 0F
-    private var lastMoveY: Float = 0F
     private var snatchEvent = false
     private var needHandlePullDownEvent = false
+    private var needHandlePullUpEvent = false
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
 //        "isPullDownRefreshing=${isPullDownRefreshing()} isLoadingMore=${isLoadingMore()}".log()
         if (isPullDownRefreshing() || isLoadingMore()) return true
@@ -96,16 +96,16 @@ class EasyRefreshBoxV2 : ConstraintLayout {
         val targetViewCanScrollUp = targetView.canScrollVertically(-1)
         //能否继续向下滚动
         val targetViewCanScrollDown = targetView.canScrollVertically(1)
-        //下拉到底后，canDown true canUp false
-        //上拉到底后，canDown false canUp true
+        //下拉到底后，CanScrollDown true CanScrollUp false
+        //上拉到底后，CanScrollDown false CanScrollUp true
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 "Intercept ACTION_DOWN".log()
                 downY = event.y
-                lastMoveY = event.y
                 //每次一开始 都先不抢 给子view留着
                 snatchEvent = false
                 needHandlePullDownEvent = false
+                needHandlePullUpEvent = false
             }
             MotionEvent.ACTION_MOVE -> {
                 "Intercept ACTION_MOVE".log()
@@ -115,12 +115,9 @@ class EasyRefreshBoxV2 : ConstraintLayout {
                     snatchEvent = !targetViewCanScrollUp
                     needHandlePullDownEvent = snatchEvent
                 } else {
-                    //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞即可
-                    if (!targetViewCanScrollDown
-                            && pullUpLoadMoreState == PullUpState.STATE_PREPARE
-                    ) {
+                    if (!targetViewCanScrollDown && pullUpLoadMoreState == PullUpState.STATE_PREPARE) {
+                        needHandlePullUpEvent = true
                         snatchEvent = true
-                        needShowLoadMoreView()
                     }
                 }
             }
@@ -139,6 +136,11 @@ class EasyRefreshBoxV2 : ConstraintLayout {
      * 因为是抢的所以 不一定有down，down在onInterceptTouchEvent中也做初始化
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        val pullDownTouched = handlerPullDownTouchEvent(event)
+
+        return true
+    }
+    private fun handlerPullDownTouchEvent(event: MotionEvent): Boolean {
         //event将包含pullUp的拦截事件，需要过滤
         if (!needHandlePullDownEvent) return false
         if (!isCanDoRefresh()) {
@@ -149,19 +151,20 @@ class EasyRefreshBoxV2 : ConstraintLayout {
             MotionEvent.ACTION_MOVE -> {
                 "onTouchEvent.ACTION_MOVE".log()
                 val moveY = event.y - downY
-                if (abs(moveY) > moveSlop) {
+                //滑动至顶部后不可继续上滑
+                val isBackOver = (event.y - moveSlop) < downY
+                if (abs(moveY) > moveSlop && !isBackOver) {
                     onPullDownContentView(moveY)
                 }
-                lastMoveY = event.y
             }
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 "onTouchEvent.ACTION_UP || ACTION_CANCEL".log()
                 downY = 0F
-                lastMoveY = 0F
-                handlerFingerLeave()
+                needHandlePullDownEvent = false
             }
         }
+
         return true
     }
 
@@ -193,7 +196,7 @@ class EasyRefreshBoxV2 : ConstraintLayout {
         }
     }
 
-    private fun handlerFingerLeave() {
+    private fun handlerPullDownFingerLeave() {
         if (grandTotalPullDownDistance >= EFFECT_THRESHOLD_PULL_DOWN_Y) {
             //回弹一下先
             val diff = grandTotalPullDownDistance - EFFECT_THRESHOLD_PULL_DOWN_Y
@@ -369,6 +372,7 @@ class EasyRefreshBoxV2 : ConstraintLayout {
 
     interface PullDownRefreshListener {
         fun onPrepare()
+
         /**将提供一个百分比的值，达到100%时松开可触发刷新,便于处理一些下拉交互动画*/
         fun onPulling(percent: Float)
         fun onEffective()

@@ -14,17 +14,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_v2)
 
-        val rv = findViewById<RecyclerView>(R.id.rv_content)
+        val rv = findViewById<RecyclerView>(R.id.rv_contentV2)
         val adapter = SimpleAdapter()
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
-        for (i in 0..30) {
+        for (i in 0..10) {
             adapter.data.add("number - $i")
         }
         adapter.notifyDataSetChanged()
 
-        val easyRefreshBox = findViewById<EasyRefreshBox>(R.id.easyRefreshBox)
-        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBox.PullDownRefreshListener {
+        val easyRefreshBox = findViewById<EasyRefreshBoxV2>(R.id.easyRefreshBoxV2)
+        easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBoxV2.PullDownRefreshListener {
             override fun onPrepare() {
                 "pullDown onPrepare".log()
             }
@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                 "pullDown onRefreshing".log()
                 easyRefreshBox.postDelayed({
                     adapter.data.clear()
-                    for (i in 0..30) {
+                    for (i in 0..10) {
                         adapter.data.add("number - $i")
                     }
                     adapter.notifyDataSetChanged()
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBox.PullUpLoadMoreListener {
+        easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBoxV2.PullUpLoadMoreListener {
             override fun onPrepare() {
                 "pullUp onPrepare".log()
             }
