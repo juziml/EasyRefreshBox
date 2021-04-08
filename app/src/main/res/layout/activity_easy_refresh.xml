@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.rg.eb.nested.NestedEasyRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.rg.eb.nested.EasyRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -34,4 +34,4 @@
         android:elevation="-2dp"
         android:background="#ce0808"
         android:layout_height="100dp"/>
-</com.rg.eb.nested.NestedEasyRefreshLayout>
+</com.rg.eb.nested.EasyRefreshLayout>

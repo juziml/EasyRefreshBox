@@ -23,6 +23,30 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
         setNewData()
+
+        val easyRefreshLayout = findViewById<EasyRefreshLayout>(R.id.aer_easy_refresh_layout)
+        easyRefreshLayout.pullDownRefreshListener = object :PullDownRefreshListener{
+
+            override fun onReset() {
+
+            }
+            override fun onPulling() {
+
+            }
+            override fun onWaitToRelease() {
+
+            }
+            override fun onRefreshing() {
+                easyRefreshLayout.postDelayed({
+                    setNewData()
+                    easyRefreshLayout.refreshComplete()
+                },2000L)
+
+            }
+            override fun onEnding() {
+
+            }
+        }
     }
 
     fun setNewData() {
@@ -32,4 +56,5 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         }
         adapter.notifyDataSetChanged()
     }
+
 }

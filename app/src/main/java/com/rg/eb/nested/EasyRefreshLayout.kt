@@ -1,9 +1,11 @@
 package com.rg.eb.nested
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.AccelerateInterpolator
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.NestedScrollingParent2
@@ -20,11 +22,13 @@ import com.rg.eb.log
  *-
  *create by zhusw on 4/8/21 15:24
  */
-class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
+class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     : ConstraintLayout(context, attributeSet),
         NestedScrollingParent2 {
-    private val TAG = "NestedEasyRefreshLayout"
+    private val TAG = "EasyRefreshLayout"
     private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
+    var pullDownRefreshListener: PullDownRefreshListener? = null
+
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
     private lateinit var targetView: View
@@ -36,7 +40,11 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             field = value
             handlerPullDownState(value)
         }
-    private val DAMP_FACTOR = 0.7F
+    private val RECOVERY_REBOUND_TO_REFRESH_POSITION = 200L
+    private val RECOVERY_REBOUND_TO_UNSTART = 400L
+    private val DAMP_FACTOR_L1 = 0.7F
+    private val DAMP_FACTOR_L2 = 0.4F
+    private val DAMP_FACTOR_L3 = 0.2F
     private val MIN_EFFECT_PULL_DOWN_Y: Float = 50.dp
     private val RELEASE_TO_REFRESH_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
@@ -52,7 +60,7 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 }
             }
         }
-        if (!this::targetView.isInitialized) NullPointerException("NestedEasyRefreshLayout has not targetView!")
+        if (!this::targetView.isInitialized) NullPointerException("EasyRefreshLayout has not targetView!")
     }
 
     override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
@@ -87,7 +95,6 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                     pullDownState = PullDownState.STATE_WAIT_TO_RELEASE
                 }
             }
-
         } else if (dy > 0 && !targetViewPullUpnLimit) {
 
         }
@@ -101,12 +108,31 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         nestedScrollingParentHelper.onStopNestedScroll(target, type)
         totalPullDownY = 0F
         "onStopNestedScroll pullDownState=$pullDownState".log(TAG)
-        when (pullDownState) {
-            PullDownState.STATE_WAIT_TO_RELEASE -> {
-                pullDownState = PullDownState.STATE_REFRESHING
-            }
+        if (pullDownState == PullDownState.STATE_WAIT_TO_RELEASE) {
+            //处理回弹出
+            recoveryToTopMaxDistance()
         }
-        stopNestedScroll()
+    }
+
+    /**
+     * 回弹至固定的刷新的位置
+     * 回弹结束进入刷新状态 等待回调
+     */
+    private fun recoveryToTopMaxDistance() {
+        targetView.animation?.cancel()
+        val currY = targetView.translationY
+        val gap = currY - RELEASE_TO_REFRESH_DOWN_Y
+        val duration = gap / (MAX_PULL_DOWN_Y - RELEASE_TO_REFRESH_DOWN_Y) * RECOVERY_REBOUND_TO_REFRESH_POSITION
+        targetView.animate()
+                .translationY(RELEASE_TO_REFRESH_DOWN_Y)
+                .setDuration(duration.toLong())
+                .setInterpolator(AccelerateInterpolator())
+                .setUpdateListener {
+                    if (it.animatedFraction == 1F) {
+                        pullDownState = PullDownState.STATE_REFRESHING
+                    }
+                }
+                .start()
     }
 
     /**
@@ -114,14 +140,18 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
      * @param translationY 必须是正值
      */
     private fun handlerPullDownRefresh(translationY: Float): Float {
-        var y = targetView.translationY + translationY * DAMP_FACTOR
-        if (y > MAX_PULL_DOWN_Y) {
-            y = MAX_PULL_DOWN_Y
+        val oldTranslateY = targetView.translationY
+        val newTranslateY = if (oldTranslateY >= MAX_PULL_DOWN_Y) {
+            translationY * DAMP_FACTOR_L3 + oldTranslateY
+        } else if (oldTranslateY >= RELEASE_TO_REFRESH_DOWN_Y) {
+            translationY * DAMP_FACTOR_L2 + oldTranslateY
+        } else {
+            translationY * DAMP_FACTOR_L1 + oldTranslateY
         }
-        if (targetView.translationY != y) {
-            targetView.translationY = y
+        if (oldTranslateY != newTranslateY) {
+            targetView.translationY = newTranslateY
         }
-        return targetView.translationY
+        return newTranslateY
     }
 
     /**
@@ -144,19 +174,44 @@ class NestedEasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         when (value) {
             PullDownState.STATE_UN_START -> {
                 tvTopState.text = "STATE_UN_START"
+                pullDownRefreshListener?.onReset()
             }
             PullDownState.STATE_PULLING -> {
                 tvTopState.text = "STATE_PULLING"
+                pullDownRefreshListener?.onPulling()
             }
             PullDownState.STATE_WAIT_TO_RELEASE -> {
                 tvTopState.text = "STATE_WAIT_TO_RELEASE"
+                pullDownRefreshListener?.onWaitToRelease()
             }
             PullDownState.STATE_REFRESHING -> {
                 tvTopState.text = "STATE_REFRESHING"
+                pullDownRefreshListener?.onRefreshing()
             }
             PullDownState.STATE_ENDING -> {
                 tvTopState.text = "STATE_ENDING"
+                pullDownRefreshListener?.onEnding()
             }
         }
+    }
+
+    /**
+     * 刷新完成，进行复位 仅在刷新时生效
+     */
+    fun refreshComplete() {
+        if(pullDownState != PullDownState.STATE_REFRESHING){
+            return
+        }
+        pullDownState = PullDownState.STATE_ENDING
+        targetView.animation?.cancel()
+        //关键性状态设置，不依赖于动画 当前场景下动画将被随意取消
+        targetView.animate()
+                .translationY(0F)
+                .setDuration(RECOVERY_REBOUND_TO_UNSTART)
+                .setInterpolator(AccelerateInterpolator())
+                .start()
+        postOnAnimationDelayed({
+            pullDownState = PullDownState.STATE_UN_START
+        },RECOVERY_REBOUND_TO_UNSTART+10)
     }
 }
