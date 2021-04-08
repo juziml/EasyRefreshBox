@@ -30,8 +30,8 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             override fun onReset() {
 
             }
-            override fun onPulling() {
 
+            override fun onPulling(percent: Float) {
             }
             override fun onWaitToRelease() {
 

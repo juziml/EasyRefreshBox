@@ -38,7 +38,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             field = value
             handlerPullDownState(value)
         }
-    private val RECOVERY_REBOUND_TO_REFRESH_POSITION = 200L
+    private val RECOVERY_REBOUND_TO_REFRESH_POSITION = 100L
     private val RECOVERY_REBOUND_TO_UNSTART = 400L
     private val DAMP_FACTOR_L1 = 0.7F
     private val DAMP_FACTOR_L2 = 0.4F
@@ -46,6 +46,10 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private val MIN_EFFECT_PULL_DOWN_Y: Float = 50.dp
     private val RELEASE_TO_REFRESH_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
+
+    private val MIN_EFFECT_PULL_UP_Y: Float = 50.dp
+    private val RELEASE_TO_REFRESH_UP_Y = 150.dp
+    private val MAX_PULL_UP_Y = 200.dp
 
     override fun onFinishInflate() {
         super.onFinishInflate()
@@ -120,10 +124,15 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         targetView.animation?.cancel()
         val currY = targetView.translationY
         val gap = currY - RELEASE_TO_REFRESH_DOWN_Y
-        val duration = gap / (MAX_PULL_DOWN_Y - RELEASE_TO_REFRESH_DOWN_Y) * RECOVERY_REBOUND_TO_REFRESH_POSITION
+        val factor = gap / (MAX_PULL_DOWN_Y - RELEASE_TO_REFRESH_DOWN_Y)
+        val duration:Long = if(factor>1){
+            RECOVERY_REBOUND_TO_REFRESH_POSITION
+        }else{
+            factor.toLong() * RECOVERY_REBOUND_TO_REFRESH_POSITION
+        }
         targetView.animate()
                 .translationY(RELEASE_TO_REFRESH_DOWN_Y)
-                .setDuration(duration.toLong())
+                .setDuration(duration)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
                     if (it.animatedFraction == 1F) {
@@ -176,7 +185,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             }
             PullDownState.STATE_PULLING -> {
                 tvTopState.text = "STATE_PULLING"
-                pullDownRefreshListener?.onPulling()
+                pullDownRefreshListener?.onPulling(targetView.translationY)
             }
             PullDownState.STATE_WAIT_TO_RELEASE -> {
                 tvTopState.text = "STATE_WAIT_TO_RELEASE"

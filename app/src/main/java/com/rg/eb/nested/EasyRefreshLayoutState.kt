@@ -15,7 +15,10 @@ internal enum class PullDownState(val value: Int) {
 
 interface PullDownRefreshListener {
     fun onReset()
-    fun onPulling()
+    /**
+     * @param percent 距离松手触发刷新 or 加载位置的下拉百分比
+     */
+    fun onPulling(percent:Float)
     fun onWaitToRelease()
     fun onRefreshing()
     fun onEnding()
