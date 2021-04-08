@@ -10,6 +10,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 
 /**
@@ -60,7 +61,7 @@ class EasyRefreshBoxV2 : ConstraintLayout {
     private val MIN_EFFECT_PULL_DOWN_Y: Float = 50.dp
     private val EFFECT_THRESHOLD_PULL_DOWN_Y = 150.dp
     private val MAX_PULL_DOWN_Y = 200.dp
-
+    private var tartViewScrollCount = 0F
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         targetView.animation?.cancel()
@@ -73,6 +74,14 @@ class EasyRefreshBoxV2 : ConstraintLayout {
     override fun onFinishInflate() {
         super.onFinishInflate()
         targetView = findViewById(R.id.rv_contentV2)
+        if(targetView is RecyclerView){
+            val rv = targetView as RecyclerView
+            rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    tartViewScrollCount += dy
+                }
+            })
+        }
         tvRefresh = findViewById(R.id.tv_refreshStateV2)
         if (tvRefresh.visibility == View.VISIBLE) {
             tvRefresh.visibility = View.GONE
@@ -108,11 +117,11 @@ class EasyRefreshBoxV2 : ConstraintLayout {
                 needHandlePullDownEvent = false
             }
             MotionEvent.ACTION_MOVE -> {
-                "Intercept ACTION_MOVE".log()
+                "Intercept ACTION_MOVE tartViewScrollCount=$tartViewScrollCount".log()
                 //只要滑起来发现能抢了 就抢，这里只是让子View不再接手move事件而已
                 val curY = event.y
                 if (curY - downY > 0) {
-                    snatchEvent = !targetViewCanScrollUp
+                    snatchEvent = !targetViewCanScrollUp || tartViewScrollCount == 0F
                     needHandlePullDownEvent = snatchEvent
                 } else {
                     //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞即可

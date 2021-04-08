@@ -24,14 +24,6 @@ class MainActivityV2 : AppCompatActivity() {
         }
         adapter.notifyDataSetChanged()
         var scrollY = 0F
-        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                scrollY += dy
-
-                "RecyclerView.OnScrollListener. onScrolled outRecordY=$scrollY  rv.scrollY=${rv.scrollY}".log()
-            }
-        })
         val easyRefreshBox = findViewById<EasyRefreshBoxV2>(R.id.easyRefreshBoxV2)
         easyRefreshBox.pullDownRefreshListener = object : EasyRefreshBoxV2.PullDownRefreshListener {
             override fun onPrepare() {
@@ -61,7 +53,6 @@ class MainActivityV2 : AppCompatActivity() {
             override fun onEnding() {
                 "pullDown onEnding".log()
             }
-
         }
         easyRefreshBox.pullUpLoadMoreListener = object : EasyRefreshBoxV2.PullUpLoadMoreListener {
             override fun onPrepare() {
