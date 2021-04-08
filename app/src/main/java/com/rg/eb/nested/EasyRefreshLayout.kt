@@ -24,6 +24,8 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     : ConstraintLayout(context, attributeSet),
         NestedScrollingParent2 {
     private val TAG = "EasyRefreshLayout"
+    var openPullDownRefresh = false
+    var openPullUpLoadMore = false
     private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
     var pullDownRefreshListener: PullDownRefreshListener? = null
 
@@ -87,7 +89,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         if (type == ViewCompat.TYPE_NON_TOUCH) {
             return
         }
-        if (dy < 0 && !targetViewPullDownLimit) {
+        if (openPullDownRefresh && dy < 0 && !targetViewPullDownLimit) {
             val currY = handlerPullDownRefresh(-dy.toFloat())
             when {
                 currY >= MIN_EFFECT_PULL_DOWN_Y && currY < RELEASE_TO_REFRESH_DOWN_Y -> {
@@ -97,7 +99,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                     pullDownState = PullDownState.STATE_WAIT_TO_RELEASE
                 }
             }
-        } else if (dy > 0 && !targetViewPullUpnLimit) {
+        } else if (openPullUpLoadMore && dy > 0 && !targetViewPullUpnLimit) {
 
         }
     }
@@ -205,7 +207,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     /**
      * 刷新完成，进行复位 仅在刷新时生效
      */
-    fun refreshComplete() {
+    fun pullDownRefreshComplete() {
         if(pullDownState != PullDownState.STATE_REFRESHING){
             return
         }

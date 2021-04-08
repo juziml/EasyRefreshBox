@@ -25,6 +25,8 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         setNewData()
 
         val easyRefreshLayout = findViewById<EasyRefreshLayout>(R.id.aer_easy_refresh_layout)
+        easyRefreshLayout.openPullDownRefresh = true
+        easyRefreshLayout.openPullUpLoadMore = true
         easyRefreshLayout.pullDownRefreshListener = object :PullDownRefreshListener{
 
             override fun onReset() {
@@ -39,7 +41,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             override fun onRefreshing() {
                 easyRefreshLayout.postDelayed({
                     setNewData()
-                    easyRefreshLayout.refreshComplete()
+                    easyRefreshLayout.pullDownRefreshComplete()
                 },2000L)
 
             }
