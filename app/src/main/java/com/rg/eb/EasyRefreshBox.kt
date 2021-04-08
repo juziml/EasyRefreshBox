@@ -34,12 +34,12 @@ class EasyRefreshBox : ConstraintLayout {
     private lateinit var targetView: View
     private lateinit var tvRefresh: TextView
     private lateinit var tvLoadMore: TextView
-    private var pullDownRefreshState = PullDownState.STATE_PREPARE
+    private var pullDownRefreshState = PullDownStateOLD.STATE_PREPARE
         set(value) {
             field = value
             handlerPullDownStatus()
         }
-    private var pullUpLoadMoreState = PullUpState.STATE_PREPARE
+    private var pullUpLoadMoreState = PullUpStateOLD.STATE_PREPARE
         set(value) {
             field = value
             handlerPullUpStatus()
@@ -117,7 +117,7 @@ class EasyRefreshBox : ConstraintLayout {
                 } else {
                     //上拉加载不再需要跟随手势，此处直接主动移动targetView，显示加载loading，并进入阻塞即可
                     if (!targetViewCanScrollDown
-                        && pullUpLoadMoreState == PullUpState.STATE_PREPARE
+                        && pullUpLoadMoreState == PullUpStateOLD.STATE_PREPARE
                     ) {
                         snatchEvent = true
                         needShowLoadMoreView()
@@ -182,13 +182,13 @@ class EasyRefreshBox : ConstraintLayout {
         targetView.translationY = translationY
         pullDownRefreshState = when {
             translationY < MIN_EFFECT_PULL_DOWN_Y -> {
-                PullDownState.STATE_PULLING
+                PullDownStateOLD.STATE_PULLING
             }
             translationY > EFFECT_THRESHOLD_PULL_DOWN_Y -> {
-                PullDownState.STATE_EFFECTIVE
+                PullDownStateOLD.STATE_EFFECTIVE
             }
             else -> {
-                PullDownState.STATE_PULLING
+                PullDownStateOLD.STATE_PULLING
             }
         }
     }
@@ -201,49 +201,49 @@ class EasyRefreshBox : ConstraintLayout {
             if (diff > 0) {
                 grandTotalPullDownDistance = EFFECT_THRESHOLD_PULL_DOWN_Y
             }
-            pullDownRefreshState = PullDownState.STATE_PRE_REFRESHING
+            pullDownRefreshState = PullDownStateOLD.STATE_PRE_REFRESHING
             targetView.animate().translationY(EFFECT_THRESHOLD_PULL_DOWN_Y)
                 .setDuration(100)
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .setUpdateListener {
                     if (it.animatedFraction == 1.0F) {
-                        pullDownRefreshState = PullDownState.STATE_REFRESHING
+                        pullDownRefreshState = PullDownStateOLD.STATE_REFRESHING
                     }
                 }
         } else {
-            pullDownRefreshState = PullDownState.STATE_PREPARE
+            pullDownRefreshState = PullDownStateOLD.STATE_PREPARE
             pullDownRecoveryAnim.start()
         }
     }
 
     private fun handlerPullDownStatus() {
         val desc = when (pullDownRefreshState) {
-            PullDownState.STATE_PREPARE -> {
+            PullDownStateOLD.STATE_PREPARE -> {
                 if (tvRefresh.visibility != View.GONE) {
                     tvRefresh.visibility = View.GONE
                 }
                 pullDownRefreshListener?.onPrepare()
                 "准备下拉刷新"
             }
-            PullDownState.STATE_PULLING -> {
+            PullDownStateOLD.STATE_PULLING -> {
                 if (tvRefresh.visibility != View.VISIBLE) {
                     tvRefresh.visibility = View.VISIBLE
                 }
                 pullDownRefreshListener?.onPulling(grandTotalPullDownDistance / EFFECT_THRESHOLD_PULL_DOWN_Y)
                 "继续下拉"
             }
-            PullDownState.STATE_EFFECTIVE -> {
+            PullDownStateOLD.STATE_EFFECTIVE -> {
                 pullDownRefreshListener?.onEffective()
                 "松开刷新"
             }
-            PullDownState.STATE_PRE_REFRESHING -> {
+            PullDownStateOLD.STATE_PRE_REFRESHING -> {
                 "即将进入刷新..."
             }
-            PullDownState.STATE_REFRESHING -> {
+            PullDownStateOLD.STATE_REFRESHING -> {
                 pullDownRefreshListener?.onRefreshing()
                 "刷新中..."
             }
-            PullDownState.STATE_ENDING -> {
+            PullDownStateOLD.STATE_ENDING -> {
                 pullDownRefreshListener?.onEnding()
                 "结束中..."
             }
@@ -252,13 +252,13 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
     private fun needShowLoadMoreView() {
-        pullUpLoadMoreState = PullUpState.STATE_PRE_LOADING
+        pullUpLoadMoreState = PullUpStateOLD.STATE_PRE_LOADING
         targetView.animate().translationY(-LOAD_MORE_CONTENT_HEIGHT)
             .setDuration(100)
             .setInterpolator(AccelerateInterpolator())
             .setUpdateListener {
                 if (it.animatedFraction == 1F) {
-                    pullUpLoadMoreState = PullUpState.STATE_LOADING
+                    pullUpLoadMoreState = PullUpStateOLD.STATE_LOADING
                 }
             }
             .start()
@@ -266,24 +266,24 @@ class EasyRefreshBox : ConstraintLayout {
 
     private fun handlerPullUpStatus() {
         val desc = when (pullUpLoadMoreState) {
-            PullUpState.STATE_PREPARE -> {
+            PullUpStateOLD.STATE_PREPARE -> {
                 if (tvLoadMore.visibility != View.GONE) {
                     tvLoadMore.visibility = View.GONE
                 }
                 pullUpLoadMoreListener?.onPrepare()
                 "准备加载"
             }
-            PullUpState.STATE_PRE_LOADING -> {
+            PullUpStateOLD.STATE_PRE_LOADING -> {
                 if (tvLoadMore.visibility != View.VISIBLE) {
                     tvLoadMore.visibility = View.VISIBLE
                 }
                 "加载中..."
             }
-            PullUpState.STATE_LOADING -> {
+            PullUpStateOLD.STATE_LOADING -> {
                 pullUpLoadMoreListener?.onLoading()
                 "加载中..."
             }
-            PullUpState.STATE_ENDING -> {
+            PullUpStateOLD.STATE_ENDING -> {
                 pullUpLoadMoreListener?.onEnding()
                 "结束加载中..."
             }
@@ -296,7 +296,7 @@ class EasyRefreshBox : ConstraintLayout {
             val faction = animation.animatedFraction
             var endY = if (faction >= 1F) {
                 grandTotalPullDownDistance = 0F
-                pullDownRefreshState = PullDownState.STATE_PREPARE
+                pullDownRefreshState = PullDownStateOLD.STATE_PREPARE
                 0F
             } else {
                 (1F - faction) * grandTotalPullDownDistance
@@ -309,7 +309,7 @@ class EasyRefreshBox : ConstraintLayout {
         override fun onAnimationUpdate(animation: ValueAnimator) {
             val faction = animation.animatedFraction
             var endY = if (faction == 1F) {
-                pullUpLoadMoreState = PullUpState.STATE_PREPARE
+                pullUpLoadMoreState = PullUpStateOLD.STATE_PREPARE
                 0F
             } else {
                 (1F - faction) * -LOAD_MORE_CONTENT_HEIGHT
@@ -322,13 +322,13 @@ class EasyRefreshBox : ConstraintLayout {
      * 刷新完成后需要主动取消刷新状态
      */
     fun refreshComplete() {
-        pullDownRefreshState = PullDownState.STATE_ENDING
+        pullDownRefreshState = PullDownStateOLD.STATE_ENDING
         targetView.animation?.cancel()
         pullDownRecoveryAnim.start()
     }
 
     fun loadMoreComplete() {
-        pullUpLoadMoreState = PullUpState.STATE_ENDING
+        pullUpLoadMoreState = PullUpStateOLD.STATE_ENDING
         targetView.animation?.cancel()
         pullUpRecoveryAnim.start()
     }
@@ -342,23 +342,23 @@ class EasyRefreshBox : ConstraintLayout {
     }
 
     fun isPullDownRefreshing(): Boolean {
-        return pullDownRefreshState == PullDownState.STATE_REFRESHING
+        return pullDownRefreshState == PullDownStateOLD.STATE_REFRESHING
     }
 
     fun isLoadingMore(): Boolean {
-        return pullUpLoadMoreState == PullUpState.STATE_LOADING
+        return pullUpLoadMoreState == PullUpStateOLD.STATE_LOADING
     }
 
     private fun isCanDoLoadMore(): Boolean {
         return pullUpLoadMoreAble
-                && pullUpLoadMoreState == PullUpState.STATE_PREPARE
+                && pullUpLoadMoreState == PullUpStateOLD.STATE_PREPARE
     }
 
     private fun isCanDoRefresh(): Boolean {
         return pullDownRefreshable
-                && pullDownRefreshState != PullDownState.STATE_ENDING
-                && pullDownRefreshState != PullDownState.STATE_REFRESHING
-                && pullDownRefreshState != PullDownState.STATE_PRE_REFRESHING
+                && pullDownRefreshState != PullDownStateOLD.STATE_ENDING
+                && pullDownRefreshState != PullDownStateOLD.STATE_REFRESHING
+                && pullDownRefreshState != PullDownStateOLD.STATE_PRE_REFRESHING
     }
 
     interface PullUpLoadMoreListener {
