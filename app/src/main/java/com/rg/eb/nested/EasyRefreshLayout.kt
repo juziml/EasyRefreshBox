@@ -60,7 +60,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private val MAX_PULL_DOWN_Y = 200.dp
 
     private val RELEASE_TO_LOAD_UP_Y = 100.dp
-    private val MAX_PULL_UP_Y =150.dp
+    private val MAX_PULL_UP_Y = 150.dp
     override fun onFinishInflate() {
         super.onFinishInflate()
         tvTopState = findViewById(R.id.aer_fl_top)
@@ -104,11 +104,13 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 && dy < 0)
                 || (dy > 0 && (pullUpState == PullState.STATE_UN_START
                 && pullDownState.value > PullState.STATE_UN_START.value))
+
         val canPullUp = (openPullUpLoadMore
                 && !targetViewPullUpnLimit
                 && dy > 0)
                 || (dy < 0 && (pullDownState == PullState.STATE_UN_START
                 && pullUpState.value > PullState.STATE_UN_START.value))
+
         if (canPullDown) {
             val currY = handlerPullDownRefresh(-dy.toFloat())
             when {
@@ -121,12 +123,12 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             }
             consumed[1] = dy
         } else if (canPullUp) {
-            val currY = handlerPullUpRefresh(dy.toFloat())
+            val currY = handlerPullUpRefresh(-dy.toFloat())
             when {
                 abs(currY) < RELEASE_TO_LOAD_UP_Y -> {
                     pullUpState = PullState.STATE_PULLING
                 }
-                abs(currY) >= RELEASE_TO_LOAD_UP_Y && pullDownState == PullState.STATE_PULLING -> {
+                abs(currY) >= RELEASE_TO_LOAD_UP_Y && pullUpState == PullState.STATE_PULLING -> {
                     pullUpState = PullState.STATE_WAIT_TO_RELEASE
                 }
             }
@@ -150,7 +152,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 quickCancelState()
             }
         }
-        when (pullDownState) {
+        when (pullUpState) {
             PullState.STATE_WAIT_TO_RELEASE -> {
                 //处理回弹出
                 reboundToBottomHoldingPosition()
@@ -167,7 +169,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private fun reboundToTopHoldingPosition() {
         targetView.animation?.cancel()
         val currY = targetView.translationY
-        val gap = currY - RELEASE_TO_REFRESH_DOWN_Y
+        val gap =  abs(currY - RELEASE_TO_REFRESH_DOWN_Y)
         val factor = gap / (MAX_PULL_DOWN_Y - RELEASE_TO_REFRESH_DOWN_Y)
         val duration: Long = if (factor > 1) {
             RECOVERY_REBOUND_TO_REFRESH_POSITION
@@ -185,13 +187,14 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 }
                 .start()
     }
+
     /**
      * 上拉回弹
      */
     private fun reboundToBottomHoldingPosition() {
         targetView.animation?.cancel()
         val currY = abs(targetView.translationY)
-        val gap = currY - RELEASE_TO_LOAD_UP_Y
+        val gap = abs(currY - RELEASE_TO_LOAD_UP_Y)
         val factor = gap / (MAX_PULL_UP_Y - RELEASE_TO_LOAD_UP_Y)
         val duration: Long = if (factor > 1) {
             RECOVERY_REBOUND_TO_REFRESH_POSITION
@@ -209,6 +212,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 }
                 .start()
     }
+
     /**
      * 一些未触发刷新or 加载的情况强制回到起点
      */
@@ -230,7 +234,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
 
     /**
      * 下移 targetView
-     * @param translationY 必须是正值
      */
     private fun handlerPullDownRefresh(dy: Float): Float {
         val oldTranslateY = targetView.translationY
@@ -253,10 +256,10 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
 
     /**
      * 上移 targetView
-     * @param translationY 必须是负值
      */
     private fun handlerPullUpRefresh(dy: Float): Float {
         val oldTranslateY = targetView.translationY
+        "handlerPullUpRefresh oldTranslateY=$oldTranslateY".log(TAG)
         //转正便于计算区间
         val newTranslateY = when {
             abs(oldTranslateY) >= MAX_PULL_UP_Y -> {
@@ -365,6 +368,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 .setInterpolator(AccelerateInterpolator())
                 .start()
     }
+
     fun pullUpLoadComplete() {
         if (pullUpState != PullState.STATE_LOADING) {
             return
