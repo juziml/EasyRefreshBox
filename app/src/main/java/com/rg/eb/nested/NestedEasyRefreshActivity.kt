@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.rg.eb.R
 import com.rg.eb.SimpleAdapter
+import com.rg.eb.log
 
 /**
  *@Desc:
@@ -27,7 +28,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         val easyRefreshLayout = findViewById<EasyRefreshLayout>(R.id.aer_easy_refresh_layout)
         easyRefreshLayout.openPullDownRefresh = true
         easyRefreshLayout.openPullUpLoadMore = true
-        easyRefreshLayout.pullDownRefreshListener = object :PullDownRefreshListener{
+        easyRefreshLayout.pullDownLoadListener = object :PullLoadListener{
 
             override fun onReset() {
 
@@ -53,7 +54,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
             }
         }
-        easyRefreshLayout.pullUpRefreshListener = object :PullDownRefreshListener{
+        easyRefreshLayout.pullUpLoadListener = object :PullLoadListener{
 
             override fun onReset() {
 
@@ -65,9 +66,11 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
             }
             override fun onLoading() {
+                "onLoading".log("EasyRefreshLayout")
                 easyRefreshLayout.postDelayed({
                     addData()
                     easyRefreshLayout.pullUpLoadComplete()
+                    "data add success ".log("EasyRefreshLayout")
                 },2000L)
 
             }
@@ -90,7 +93,8 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
     }
 
     fun addData() {
-        for (i in 0..10) {
+        val size = adapter.data.size
+        for (i in size..size+10) {
             adapter.data.add("number - $i")
         }
         adapter.notifyDataSetChanged()

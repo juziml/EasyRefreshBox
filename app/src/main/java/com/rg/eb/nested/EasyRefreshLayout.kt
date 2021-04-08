@@ -13,7 +13,6 @@ import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.rg.eb.R
 import com.rg.eb.dp
-import com.rg.eb.log
 import java.lang.Math.abs
 
 /**
@@ -29,8 +28,8 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     var openPullDownRefresh = false
     var openPullUpLoadMore = false
     private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
-    var pullDownRefreshListener: PullDownRefreshListener? = null
-    var pullUpRefreshListener: PullDownRefreshListener? = null
+    var pullDownLoadListener: PullLoadListener? = null
+    var pullUpLoadListener: PullLoadListener? = null
 
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
@@ -38,7 +37,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private lateinit var tvTopState: TextView
     private lateinit var tvBottomState: TextView
 
-    private var totalPullDownY = 0F
     private var pullDownState: PullState = PullState.STATE_UN_START
         private set(value) {
             field = value
@@ -93,7 +91,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     override fun onNestedPreScroll(target: View, dx: Int, dy: Int, consumed: IntArray, type: Int) {
         targetViewPullDownLimit = targetView.canScrollVertically(-1)
         targetViewPullUpnLimit = targetView.canScrollVertically(1)
-        "onNestedPreScroll dy=$dy ".log(TAG)
         //屏蔽抛投
         if (type == ViewCompat.TYPE_NON_TOUCH) {
             return
@@ -112,7 +109,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 && pullUpState.value > PullState.STATE_UN_START.value))
 
         if (canPullDown) {
-            val currY = handlerPullDownRefresh(-dy.toFloat())
+            val currY = handlerPullDownPosition(-dy.toFloat())
             when {
                 currY < RELEASE_TO_REFRESH_DOWN_Y -> {
                     pullDownState = PullState.STATE_PULLING
@@ -123,7 +120,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
             }
             consumed[1] = dy
         } else if (canPullUp) {
-            val currY = handlerPullUpRefresh(-dy.toFloat())
+            val currY = handlerPullUpPosition(-dy.toFloat())
             when {
                 abs(currY) < RELEASE_TO_LOAD_UP_Y -> {
                     pullUpState = PullState.STATE_PULLING
@@ -141,8 +138,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
 
     override fun onStopNestedScroll(target: View, type: Int) {
         nestedScrollingParentHelper.onStopNestedScroll(target, type)
-        totalPullDownY = 0F
-        "onStopNestedScroll pullState=$pullDownState".log(TAG)
         when (pullDownState) {
             PullState.STATE_WAIT_TO_RELEASE -> {
                 //处理回弹出
@@ -207,7 +202,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
                     if (it.animatedFraction == 1F) {
-                        pullDownState = PullState.STATE_LOADING
+                        pullUpState = PullState.STATE_LOADING
                     }
                 }
                 .start()
@@ -235,7 +230,7 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     /**
      * 下移 targetView
      */
-    private fun handlerPullDownRefresh(dy: Float): Float {
+    private fun handlerPullDownPosition(dy: Float): Float {
         val oldTranslateY = targetView.translationY
         val newTranslateY = when {
             oldTranslateY >= MAX_PULL_DOWN_Y -> {
@@ -257,9 +252,8 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     /**
      * 上移 targetView
      */
-    private fun handlerPullUpRefresh(dy: Float): Float {
+    private fun handlerPullUpPosition(dy: Float): Float {
         val oldTranslateY = targetView.translationY
-        "handlerPullUpRefresh oldTranslateY=$oldTranslateY".log(TAG)
         //转正便于计算区间
         val newTranslateY = when {
             abs(oldTranslateY) >= MAX_PULL_UP_Y -> {
@@ -293,27 +287,27 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         when (value) {
             PullState.STATE_UN_START -> {
                 tvBottomState.text = "STATE_UN_START"
-                pullUpRefreshListener?.onReset()
+                pullUpLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
                 tvBottomState.text = "STATE_PULLING"
-                pullUpRefreshListener?.onPulling(targetView.translationY)
+                pullUpLoadListener?.onPulling(targetView.translationY)
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
                 tvBottomState.text = "STATE_WAIT_TO_RELEASE"
-                pullUpRefreshListener?.onWaitToRelease()
+                pullUpLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
                 tvBottomState.text = "STATE_LOADING"
-                pullUpRefreshListener?.onLoading()
+                pullUpLoadListener?.onLoading()
             }
             PullState.STATE_ENDING -> {
                 tvBottomState.text = "STATE_ENDING"
-                pullUpRefreshListener?.onEnding()
+                pullUpLoadListener?.onEnding()
             }
             PullState.STATE_CANCELING -> {
-                tvTopState.text = "STATE_CANCELING"
-                pullUpRefreshListener?.onCanceling()
+                tvBottomState.text = "STATE_CANCELING"
+                pullUpLoadListener?.onCanceling()
             }
         }
     }
@@ -322,27 +316,27 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
         when (value) {
             PullState.STATE_UN_START -> {
                 tvTopState.text = "STATE_UN_START"
-                pullDownRefreshListener?.onReset()
+                pullDownLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
                 tvTopState.text = "STATE_PULLING"
-                pullDownRefreshListener?.onPulling(targetView.translationY)
+                pullDownLoadListener?.onPulling(targetView.translationY)
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
                 tvTopState.text = "STATE_WAIT_TO_RELEASE"
-                pullDownRefreshListener?.onWaitToRelease()
+                pullDownLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
                 tvTopState.text = "STATE_LOADING"
-                pullDownRefreshListener?.onLoading()
+                pullDownLoadListener?.onLoading()
             }
             PullState.STATE_ENDING -> {
                 tvTopState.text = "STATE_ENDING"
-                pullDownRefreshListener?.onEnding()
+                pullDownLoadListener?.onEnding()
             }
             PullState.STATE_CANCELING -> {
                 tvTopState.text = "STATE_CANCELING"
-                pullDownRefreshListener?.onCanceling()
+                pullDownLoadListener?.onCanceling()
             }
         }
     }

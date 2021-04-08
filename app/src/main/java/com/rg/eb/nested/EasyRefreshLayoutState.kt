@@ -14,7 +14,7 @@ internal enum class PullState(val value: Int) {
     STATE_CANCELING(5)
 }
 
-interface PullDownRefreshListener {
+interface PullLoadListener {
     fun onReset()
     /**
      * @param percent 距离松手触发刷新 or 加载位置的下拉百分比
