@@ -69,10 +69,12 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
             }
             override fun onLoading() {
                 "onLoading".log("EasyRefreshLayout")
+                val lastPosition =  adapter.data.size-1
                 easyRefreshLayout.postDelayed({
                     addData()
                     easyRefreshLayout.pullUpLoadComplete()
                     "data add success ".log("EasyRefreshLayout")
+                    rv.smoothScrollToPosition(lastPosition+1)
                 },2000L)
 
             }
