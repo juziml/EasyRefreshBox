@@ -24,6 +24,21 @@ import com.rg.eb.log
  */
 class SimpleRefreshLayout : EasyRefreshLayout {
     private val TAG = "SimpleRefreshLayout"
+
+    override fun onPullDownLoadFailure() {
+
+
+    }
+
+    override fun onPullUpLoadFailure() {
+
+    }
+
+    override fun onPullUpNoMoreLoad() {
+        //自行处理无更多数据时的等待 或者点击
+
+    }
+
     lateinit var  headView:View
     lateinit var  headText:TextView
     lateinit var  headBear:View

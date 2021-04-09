@@ -22,20 +22,28 @@ import java.lang.Math.abs
  *create by zhusw on 4/8/21 15:24
  */
 abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
+    private val TAG = "EasyRefreshLayout"
+
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
     }
+    abstract fun onPullDownLoadFailure()
+    abstract fun onPullUpLoadFailure()
+    abstract fun onPullUpNoMoreLoad()
 
-    private val TAG = "EasyRefreshLayout"
+    abstract var targetViewId: Int
+
     var openPullDownRefresh = false
 
     var openPullUpLoadMore = false
-    private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
-    protected open var pullDownLoadListener: PullLoadListener? = null
 
+    private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
+
+    protected open var pullDownLoadListener: PullLoadListener? = null
     protected open var pullUpLoadListener: PullLoadListener? = null
 
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
+
     private lateinit var targetView: View
 
     private var pullDownState: PullState = PullState.STATE_UN_START
@@ -57,15 +65,15 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
 
     var thresholdReleaseToLoadingDowY = 150.dp
         protected set
+
     var maxPullDownY = 200.dp
         protected set
 
     var thresholdReleaseToLoadingUpY = 100.dp
         protected set
+
     var maxPullUpY = 150.dp
         protected set
-
-    open abstract var targetViewId: Int
 
     /**
      * 在构造执行完立即调用
@@ -98,10 +106,10 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
             return
         }
 
-        if(pullDownState.value >= PullState.STATE_LOADING.value){
+        if (pullDownState.value >= PullState.STATE_LOADING.value) {
             return
         }
-        if(pullUpState.value >= PullState.STATE_LOADING.value){
+        if (pullUpState.value >= PullState.STATE_LOADING.value) {
             return
         }
         //下拉条件，进入下拉后进行上拉
@@ -343,7 +351,7 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
     }
 
     /**
-     * 刷新完成，进行复位 仅在刷新时生效
+     * 下拉加载完成，进行复位
      */
     fun pullDownLoadComplete() {
         if (pullDownState != PullState.STATE_LOADING) {
@@ -364,6 +372,9 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
                 .start()
     }
 
+    /**
+     * 上拉加载完成，进行复位
+     */
     fun pullUpLoadComplete() {
         if (pullUpState != PullState.STATE_LOADING) {
             return
