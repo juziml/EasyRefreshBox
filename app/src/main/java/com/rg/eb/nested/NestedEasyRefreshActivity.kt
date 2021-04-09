@@ -21,7 +21,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_easy_refresh)
-        rv = findViewById(R.id.aer_rv)
+        rv = findViewById(R.id.aer_target)
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
         setNewData()

@@ -29,7 +29,6 @@ class SimpleRefreshLayout : EasyRefreshLayout {
     lateinit var  headBear:View
     lateinit var  footView:TextView
     val headBearAnim = ObjectAnimator()
-
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
         headView = View.inflate(context,R.layout.header_simple,null)
         headText = headView.findViewById(R.id.hs_tv_txt)
@@ -41,23 +40,23 @@ class SimpleRefreshLayout : EasyRefreshLayout {
         hlp.leftToLeft = 0
         headView.elevation = (-1).dp
         addView(headView,hlp)
-
         footView = TextView(context)
         val flp = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT)
         flp.bottomToBottom = 0
         flp.leftToLeft = 0
         footView.elevation = (-1).dp
         addView(footView,flp)
-
         headBearAnim.target = headBear
         headBearAnim.setPropertyName("rotationY")
         headBearAnim.setFloatValues(0F,360F)
         headBearAnim.duration = 1000L
         headBearAnim.interpolator = AccelerateDecelerateInterpolator()
         headBearAnim.repeatCount = Animation.INFINITE
+        val typeArray = context.obtainStyledAttributes(attributeSet,R.styleable.SimpleRefreshLayout)
+        targetViewId = typeArray.getResourceId(R.styleable.SimpleRefreshLayout_targetViewId,-1)
+        "targetViewId =$targetViewId".log(TAG)
     }
-    override val targetViewId: Int
-        get() = R.id.aer_rv
+    override var targetViewId: Int
 
     var onPullDownLoading: OnPullDownLoading? = null
     var onPullUpLoading: OnPullUpLoading? = null

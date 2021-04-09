@@ -71,16 +71,15 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
         "onAttachedToWindow".log(TAG)
     }
 
-    open abstract val targetViewId: Int
+    open abstract var targetViewId: Int
 
     /**
      * 在构造执行完立即调用
      */
     override fun onFinishInflate() {
         super.onFinishInflate()
-        "onFinishInflate".log(TAG)
         targetView = findViewById(targetViewId)
-        if (!this::targetView.isInitialized) throw NullPointerException("EasyRefreshLayout has not targetView!")
+        if (!this::targetView.isInitialized) throw NullPointerException("can not findViewBy targetViewId:$targetViewId")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
