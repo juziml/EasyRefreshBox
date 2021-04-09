@@ -25,65 +25,26 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         rv.adapter = adapter
         setNewData()
 
-        val easyRefreshLayout = findViewById<EasyRefreshLayout>(R.id.aer_easy_refresh_layout)
-        easyRefreshLayout.openPullDownRefresh = true
-        easyRefreshLayout.openPullUpLoadMore = true
-        easyRefreshLayout.pullDownLoadListener = object :PullLoadListener{
-
-            override fun onReset() {
-
-            }
-
-            override fun onPulling(distance: Float) {
-                "onPulling percent=$distance refreshThreshold=${easyRefreshLayout.thresholdReleaseToLoadingDowY}".log("EasyRefreshLayout")
-            }
-            override fun onWaitToRelease() {
-                "onWaitToRelease".log("EasyRefreshLayout")
-            }
-            override fun onLoading() {
-                easyRefreshLayout.postDelayed({
-                    setNewData()
-                    easyRefreshLayout.pullDownLoadComplete()
-                },2000L)
-
-            }
-            override fun onEnding() {
-
-            }
-
-            override fun onCanceling() {
-
+        val simpleRefreshLayout = findViewById<SimpleRefreshLayout>(R.id.aer_simple_refresh_layout)
+        simpleRefreshLayout.openPullDownRefresh = true
+        simpleRefreshLayout.openPullUpLoadMore = true
+        simpleRefreshLayout.onPullUpLoading = object : SimpleRefreshLayout.OnPullUpLoading {
+            override fun onPullUpLoading() {
+                val lastPosition = adapter.data.size - 1
+                simpleRefreshLayout.postDelayed({
+                    addData()
+                    simpleRefreshLayout.pullUpLoadComplete()
+                    "data add success ".log("EasyRefreshLayout")
+                    rv.smoothScrollToPosition(lastPosition + 1)
+                }, 2000L)
             }
         }
-        easyRefreshLayout.pullUpLoadListener = object :PullLoadListener{
-
-            override fun onReset() {
-
-            }
-
-            override fun onPulling(distance: Float) {
-
-            }
-            override fun onWaitToRelease() {
-
-            }
-            override fun onLoading() {
-                "onLoading".log("EasyRefreshLayout")
-                val lastPosition =  adapter.data.size-1
-                easyRefreshLayout.postDelayed({
-                    addData()
-                    easyRefreshLayout.pullUpLoadComplete()
-                    "data add success ".log("EasyRefreshLayout")
-                    rv.smoothScrollToPosition(lastPosition+1)
-                },2000L)
-
-            }
-            override fun onEnding() {
-
-            }
-
-            override fun onCanceling() {
-
+        simpleRefreshLayout.onPullDownLoading = object : SimpleRefreshLayout.OnPullDownLoading {
+            override fun onPullDownLoading() {
+                simpleRefreshLayout.postDelayed({
+                    setNewData()
+                    simpleRefreshLayout.pullDownLoadComplete()
+                }, 2000L)
             }
         }
     }
@@ -98,7 +59,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
     fun addData() {
         val size = adapter.data.size
-        for (i in size..size+10) {
+        for (i in size..size + 10) {
             adapter.data.add("number - $i")
         }
         adapter.notifyDataSetChanged()

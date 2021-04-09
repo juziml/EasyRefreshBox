@@ -10,6 +10,7 @@ import androidx.core.view.NestedScrollingParent2
 import androidx.core.view.NestedScrollingParentHelper
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.rg.eb.R
 import com.rg.eb.dp
 import com.rg.eb.log
 import java.lang.Math.abs
@@ -20,17 +21,19 @@ import java.lang.Math.abs
  *-
  *create by zhusw on 4/8/21 15:24
  */
-open class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
+abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
         "constructor".log(TAG)
     }
 
     private val TAG = "EasyRefreshLayout"
     var openPullDownRefresh = false
+
     var openPullUpLoadMore = false
     private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
-    var pullDownLoadListener: PullLoadListener? = null
-    var pullUpLoadListener: PullLoadListener? = null
+    protected open var pullDownLoadListener: PullLoadListener? = null
+
+    protected open var pullUpLoadListener: PullLoadListener? = null
 
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
@@ -53,14 +56,14 @@ open class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
     private val DAMP_FACTOR_L2 = 0.4F
     private val DAMP_FACTOR_L3 = 0.2F
 
-     var thresholdReleaseToLoadingDowY = 150.dp
+    var thresholdReleaseToLoadingDowY = 150.dp
         protected set
-     var maxPullDownY = 200.dp
+    var maxPullDownY = 200.dp
         protected set
 
-     var thresholdReleaseToLoadingUpY = 100.dp
+    var thresholdReleaseToLoadingUpY = 100.dp
         protected set
-     var maxPullUpY = 150.dp
+    var maxPullUpY = 150.dp
         protected set
 
     override fun onAttachedToWindow() {
@@ -68,20 +71,15 @@ open class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
         "onAttachedToWindow".log(TAG)
     }
 
+    open abstract val targetViewId: Int
+
     /**
      * 在构造执行完立即调用
      */
     override fun onFinishInflate() {
         super.onFinishInflate()
-        if (childCount > 0) {
-            for (i in 0 until childCount) {
-                val view = getChildAt(i)
-                if (view is RecyclerView) {
-                    targetView = view
-                }
-            }
-        }
         "onFinishInflate".log(TAG)
+        targetView = findViewById(targetViewId)
         if (!this::targetView.isInitialized) throw NullPointerException("EasyRefreshLayout has not targetView!")
     }
 
