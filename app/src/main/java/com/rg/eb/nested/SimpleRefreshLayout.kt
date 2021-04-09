@@ -66,7 +66,6 @@ class SimpleRefreshLayout : EasyRefreshLayout {
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         //布局设置完完 设置下拉边界
-        "headView.height=${headView.height}".log(TAG)
         thresholdReleaseToLoadingDowY = headView.height.toFloat()* 1.2F
         maxPullDownY = thresholdReleaseToLoadingDowY * 1.2F
     }
