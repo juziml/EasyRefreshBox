@@ -1,4 +1,4 @@
-package com.rg.eb.nested
+package com.rg.eb.test
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
