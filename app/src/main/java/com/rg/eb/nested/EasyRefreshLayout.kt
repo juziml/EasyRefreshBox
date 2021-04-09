@@ -21,9 +21,12 @@ import java.lang.Math.abs
  *-
  *create by zhusw on 4/8/21 15:24
  */
-class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
-    : ConstraintLayout(context, attributeSet),
-        NestedScrollingParent2 {
+class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
+
+    constructor(context: Context, attributeSet: AttributeSet):super(context, attributeSet){
+
+    }
+
     private val TAG = "EasyRefreshLayout"
     var openPullDownRefresh = false
     var openPullUpLoadMore = false
@@ -34,8 +37,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private var targetViewPullDownLimit = true
     private var targetViewPullUpnLimit = true
     private lateinit var targetView: View
-    private lateinit var tvTopState: TextView
-    private lateinit var tvBottomState: TextView
 
     private var pullDownState: PullState = PullState.STATE_UN_START
         private set(value) {
@@ -61,8 +62,6 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private val MAX_PULL_UP_Y = 150.dp
     override fun onFinishInflate() {
         super.onFinishInflate()
-        tvTopState = findViewById(R.id.aer_fl_top)
-        tvBottomState = findViewById(R.id.aer_fl_bottom)
         if (childCount > 0) {
             for (i in 0 until childCount) {
                 val view = getChildAt(i)
@@ -286,27 +285,21 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private fun handlerPullUpState(value: PullState) {
         when (value) {
             PullState.STATE_UN_START -> {
-                tvBottomState.text = "STATE_UN_START"
                 pullUpLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
-                tvBottomState.text = "STATE_PULLING"
                 pullUpLoadListener?.onPulling(targetView.translationY)
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
-                tvBottomState.text = "STATE_WAIT_TO_RELEASE"
                 pullUpLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
-                tvBottomState.text = "STATE_LOADING"
                 pullUpLoadListener?.onLoading()
             }
             PullState.STATE_ENDING -> {
-                tvBottomState.text = "STATE_ENDING"
                 pullUpLoadListener?.onEnding()
             }
             PullState.STATE_CANCELING -> {
-                tvBottomState.text = "STATE_CANCELING"
                 pullUpLoadListener?.onCanceling()
             }
         }
@@ -315,27 +308,21 @@ class EasyRefreshLayout(context: Context, attributeSet: AttributeSet)
     private fun handlerPullDownState(value: PullState) {
         when (value) {
             PullState.STATE_UN_START -> {
-                tvTopState.text = "STATE_UN_START"
                 pullDownLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
-                tvTopState.text = "STATE_PULLING"
                 pullDownLoadListener?.onPulling(targetView.translationY)
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
-                tvTopState.text = "STATE_WAIT_TO_RELEASE"
                 pullDownLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
-                tvTopState.text = "STATE_LOADING"
                 pullDownLoadListener?.onLoading()
             }
             PullState.STATE_ENDING -> {
-                tvTopState.text = "STATE_ENDING"
                 pullDownLoadListener?.onEnding()
             }
             PullState.STATE_CANCELING -> {
-                tvTopState.text = "STATE_CANCELING"
                 pullDownLoadListener?.onCanceling()
             }
         }
