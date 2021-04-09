@@ -17,9 +17,9 @@ internal enum class PullState(val value: Int) {
 interface PullLoadListener {
     fun onReset()
     /**
-     * @param percent 距离松手触发刷新 or 加载位置的下拉百分比
+     * @param distance 目前已经滑动的绝对距离,但不会超过 松手可触发刷新但阈值
      */
-    fun onPulling(percent:Float)
+    fun onPulling(distance:Float)
     fun onWaitToRelease()
     fun onLoading()
     fun onEnding()

@@ -34,10 +34,11 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
             }
 
-            override fun onPulling(percent: Float) {
+            override fun onPulling(distance: Float) {
+                "onPulling percent=$distance refreshThreshold=${easyRefreshLayout.thresholdReleaseToLoadingDowY}".log("EasyRefreshLayout")
             }
             override fun onWaitToRelease() {
-
+                "onWaitToRelease".log("EasyRefreshLayout")
             }
             override fun onLoading() {
                 easyRefreshLayout.postDelayed({
@@ -60,7 +61,8 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
 
             }
 
-            override fun onPulling(percent: Float) {
+            override fun onPulling(distance: Float) {
+
             }
             override fun onWaitToRelease() {
 

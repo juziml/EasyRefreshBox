@@ -5,14 +5,13 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateInterpolator
-import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.NestedScrollingParent2
 import androidx.core.view.NestedScrollingParentHelper
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.rg.eb.R
 import com.rg.eb.dp
+import com.rg.eb.log
 import java.lang.Math.abs
 
 /**
@@ -21,10 +20,9 @@ import java.lang.Math.abs
  *-
  *create by zhusw on 4/8/21 15:24
  */
-class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
-
-    constructor(context: Context, attributeSet: AttributeSet):super(context, attributeSet){
-
+open class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
+    constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
+        "constructor".log(TAG)
     }
 
     private val TAG = "EasyRefreshLayout"
@@ -55,11 +53,24 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
     private val DAMP_FACTOR_L2 = 0.4F
     private val DAMP_FACTOR_L3 = 0.2F
 
-    private val RELEASE_TO_REFRESH_DOWN_Y = 150.dp
-    private val MAX_PULL_DOWN_Y = 200.dp
+     var thresholdReleaseToLoadingDowY = 150.dp
+        protected set
+     var maxPullDownY = 200.dp
+        protected set
 
-    private val RELEASE_TO_LOAD_UP_Y = 100.dp
-    private val MAX_PULL_UP_Y = 150.dp
+     var thresholdReleaseToLoadingUpY = 100.dp
+        protected set
+     var maxPullUpY = 150.dp
+        protected set
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        "onAttachedToWindow".log(TAG)
+    }
+
+    /**
+     * 在构造执行完立即调用
+     */
     override fun onFinishInflate() {
         super.onFinishInflate()
         if (childCount > 0) {
@@ -70,7 +81,18 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
                 }
             }
         }
-        if (!this::targetView.isInitialized) NullPointerException("EasyRefreshLayout has not targetView!")
+        "onFinishInflate".log(TAG)
+        if (!this::targetView.isInitialized) throw NullPointerException("EasyRefreshLayout has not targetView!")
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        "onMeasure".log(TAG)
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        "onLayout".log(TAG)
     }
 
     override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
@@ -110,10 +132,10 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
         if (canPullDown) {
             val currY = handlerPullDownPosition(-dy.toFloat())
             when {
-                currY < RELEASE_TO_REFRESH_DOWN_Y -> {
+                currY < thresholdReleaseToLoadingDowY -> {
                     pullDownState = PullState.STATE_PULLING
                 }
-                currY >= RELEASE_TO_REFRESH_DOWN_Y && pullDownState == PullState.STATE_PULLING -> {
+                currY >= thresholdReleaseToLoadingDowY && pullDownState == PullState.STATE_PULLING -> {
                     pullDownState = PullState.STATE_WAIT_TO_RELEASE
                 }
             }
@@ -121,10 +143,10 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
         } else if (canPullUp) {
             val currY = handlerPullUpPosition(-dy.toFloat())
             when {
-                abs(currY) < RELEASE_TO_LOAD_UP_Y -> {
+                abs(currY) < thresholdReleaseToLoadingUpY -> {
                     pullUpState = PullState.STATE_PULLING
                 }
-                abs(currY) >= RELEASE_TO_LOAD_UP_Y && pullUpState == PullState.STATE_PULLING -> {
+                abs(currY) >= thresholdReleaseToLoadingUpY && pullUpState == PullState.STATE_PULLING -> {
                     pullUpState = PullState.STATE_WAIT_TO_RELEASE
                 }
             }
@@ -163,15 +185,15 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
     private fun reboundToTopHoldingPosition() {
         targetView.animation?.cancel()
         val currY = targetView.translationY
-        val gap =  abs(currY - RELEASE_TO_REFRESH_DOWN_Y)
-        val factor = gap / (MAX_PULL_DOWN_Y - RELEASE_TO_REFRESH_DOWN_Y)
+        val gap = abs(currY - thresholdReleaseToLoadingDowY)
+        val factor = gap / (maxPullDownY - thresholdReleaseToLoadingDowY)
         val duration: Long = if (factor > 1) {
             RECOVERY_REBOUND_TO_REFRESH_POSITION
         } else {
             factor.toLong() * RECOVERY_REBOUND_TO_REFRESH_POSITION
         }
         targetView.animate()
-                .translationY(RELEASE_TO_REFRESH_DOWN_Y)
+                .translationY(thresholdReleaseToLoadingDowY)
                 .setDuration(duration)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
@@ -188,15 +210,15 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
     private fun reboundToBottomHoldingPosition() {
         targetView.animation?.cancel()
         val currY = abs(targetView.translationY)
-        val gap = abs(currY - RELEASE_TO_LOAD_UP_Y)
-        val factor = gap / (MAX_PULL_UP_Y - RELEASE_TO_LOAD_UP_Y)
+        val gap = abs(currY - thresholdReleaseToLoadingUpY)
+        val factor = gap / (maxPullUpY - thresholdReleaseToLoadingUpY)
         val duration: Long = if (factor > 1) {
             RECOVERY_REBOUND_TO_REFRESH_POSITION
         } else {
             factor.toLong() * RECOVERY_REBOUND_TO_REFRESH_POSITION
         }
         targetView.animate()
-                .translationY(-RELEASE_TO_LOAD_UP_Y)
+                .translationY(-thresholdReleaseToLoadingUpY)
                 .setDuration(duration)
                 .setInterpolator(AccelerateInterpolator())
                 .setUpdateListener {
@@ -232,10 +254,10 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
     private fun handlerPullDownPosition(dy: Float): Float {
         val oldTranslateY = targetView.translationY
         val newTranslateY = when {
-            oldTranslateY >= MAX_PULL_DOWN_Y -> {
+            oldTranslateY >= maxPullDownY -> {
                 dy * DAMP_FACTOR_L3 + oldTranslateY
             }
-            oldTranslateY >= RELEASE_TO_REFRESH_DOWN_Y -> {
+            oldTranslateY >= thresholdReleaseToLoadingDowY -> {
                 dy * DAMP_FACTOR_L2 + oldTranslateY
             }
             else -> {
@@ -255,10 +277,10 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
         val oldTranslateY = targetView.translationY
         //转正便于计算区间
         val newTranslateY = when {
-            abs(oldTranslateY) >= MAX_PULL_UP_Y -> {
+            abs(oldTranslateY) >= maxPullUpY -> {
                 dy * DAMP_FACTOR_L3 + oldTranslateY
             }
-            abs(oldTranslateY) >= RELEASE_TO_LOAD_UP_Y -> {
+            abs(oldTranslateY) >= thresholdReleaseToLoadingUpY -> {
                 dy * DAMP_FACTOR_L2 + oldTranslateY
             }
             else -> {
@@ -288,9 +310,11 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
                 pullUpLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
-                pullUpLoadListener?.onPulling(targetView.translationY)
+                pullUpLoadListener?.onPulling(abs(targetView.translationY))
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
+                //pulling本身具备跳跃性，所以等达到阈值后进行固定回调
+                pullUpLoadListener?.onPulling(thresholdReleaseToLoadingUpY)
                 pullUpLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
@@ -311,9 +335,11 @@ class EasyRefreshLayout: ConstraintLayout,NestedScrollingParent2 {
                 pullDownLoadListener?.onReset()
             }
             PullState.STATE_PULLING -> {
-                pullDownLoadListener?.onPulling(targetView.translationY)
+                pullDownLoadListener?.onPulling(abs(targetView.translationY))
             }
             PullState.STATE_WAIT_TO_RELEASE -> {
+                //pulling本身具备跳跃性，所以等达到阈值后进行固定回调
+                pullDownLoadListener?.onPulling(thresholdReleaseToLoadingDowY)
                 pullDownLoadListener?.onWaitToRelease()
             }
             PullState.STATE_LOADING -> {
