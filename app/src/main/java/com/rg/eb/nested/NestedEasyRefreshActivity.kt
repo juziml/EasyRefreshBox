@@ -1,6 +1,7 @@
 package com.rg.eb.nested
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,7 +25,9 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
         setNewData()
-
+        adapter.setOnItemClickListener{adapter, view, position ->
+            Toast.makeText(NestedEasyRefreshActivity@this,"click=$position",Toast.LENGTH_SHORT).show()
+        }
         val simpleRefreshLayout = findViewById<SimpleRefreshLayout>(R.id.aer_simple_refresh_layout)
         simpleRefreshLayout.openPullDownRefresh = true
         simpleRefreshLayout.openPullUpLoadMore = true
@@ -35,7 +38,7 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
                 simpleRefreshLayout.postDelayed({
                     setNewData()
                     simpleRefreshLayout.pullDownLoadComplete()
-                }, 2000L)
+                }, 5000L)
             }
         }
         simpleRefreshLayout.onPullUpLoading = object : SimpleRefreshLayout.OnPullUpLoading {
