@@ -289,17 +289,6 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
         return targetView.translationY
     }
 
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        //处于loading 状态以上时 屏蔽所有事件
-//        if (pullDownState.value >= PullState.STATE_LOADING.value) {
-//            return true
-//        }
-//        if (pullUpState.value >= PullState.STATE_LOADING.value) {
-//            return true
-//        }
-        return super.onInterceptTouchEvent(ev)
-    }
-
     private fun handlerPullUpState(value: PullState) {
         when (value) {
             PullState.STATE_UN_START -> {
