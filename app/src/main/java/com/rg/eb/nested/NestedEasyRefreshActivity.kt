@@ -28,22 +28,24 @@ class NestedEasyRefreshActivity : AppCompatActivity() {
         val simpleRefreshLayout = findViewById<SimpleRefreshLayout>(R.id.aer_simple_refresh_layout)
         simpleRefreshLayout.openPullDownRefresh = true
         simpleRefreshLayout.openPullUpLoadMore = true
+
+        simpleRefreshLayout.onPullDownLoading = object : SimpleRefreshLayout.OnPullDownLoading {
+            override fun onPullDownLoading() {
+                "onPullDownLoading".log("EasyRefreshLayout")
+                simpleRefreshLayout.postDelayed({
+                    setNewData()
+                    simpleRefreshLayout.pullDownLoadComplete()
+                }, 2000L)
+            }
+        }
         simpleRefreshLayout.onPullUpLoading = object : SimpleRefreshLayout.OnPullUpLoading {
             override fun onPullUpLoading() {
+                "onPullUpLoading".log("EasyRefreshLayout")
                 val lastPosition = adapter.data.size - 1
                 simpleRefreshLayout.postDelayed({
                     addData()
                     simpleRefreshLayout.pullUpLoadComplete()
-                    "data add success ".log("EasyRefreshLayout")
                     rv.smoothScrollToPosition(lastPosition + 1)
-                }, 2000L)
-            }
-        }
-        simpleRefreshLayout.onPullDownLoading = object : SimpleRefreshLayout.OnPullDownLoading {
-            override fun onPullDownLoading() {
-                simpleRefreshLayout.postDelayed({
-                    setNewData()
-                    simpleRefreshLayout.pullDownLoadComplete()
                 }, 2000L)
             }
         }
