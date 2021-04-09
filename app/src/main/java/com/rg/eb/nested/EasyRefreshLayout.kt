@@ -23,7 +23,6 @@ import java.lang.Math.abs
  */
 abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
-        "constructor".log(TAG)
     }
 
     private val TAG = "EasyRefreshLayout"
@@ -66,11 +65,6 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
     var maxPullUpY = 150.dp
         protected set
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        "onAttachedToWindow".log(TAG)
-    }
-
     open abstract var targetViewId: Int
 
     /**
@@ -80,16 +74,6 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
         super.onFinishInflate()
         targetView = findViewById(targetViewId)
         if (!this::targetView.isInitialized) throw NullPointerException("can not findViewBy targetViewId:$targetViewId")
-    }
-
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        "onMeasure".log(TAG)
-    }
-
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        super.onLayout(changed, left, top, right, bottom)
-        "onLayout".log(TAG)
     }
 
     override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
@@ -111,6 +95,13 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
         targetViewPullUpnLimit = targetView.canScrollVertically(1)
         //屏蔽抛投
         if (type == ViewCompat.TYPE_NON_TOUCH) {
+            return
+        }
+
+        if(pullDownState.value >= PullState.STATE_LOADING.value){
+            return
+        }
+        if(pullUpState.value >= PullState.STATE_LOADING.value){
             return
         }
         //下拉条件，进入下拉后进行上拉
@@ -292,12 +283,12 @@ abstract class EasyRefreshLayout : ConstraintLayout, NestedScrollingParent2 {
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         //处于loading 状态以上时 屏蔽所有事件
-        if (pullDownState.value >= PullState.STATE_LOADING.value) {
-            return true
-        }
-        if (pullUpState.value >= PullState.STATE_LOADING.value) {
-            return true
-        }
+//        if (pullDownState.value >= PullState.STATE_LOADING.value) {
+//            return true
+//        }
+//        if (pullUpState.value >= PullState.STATE_LOADING.value) {
+//            return true
+//        }
         return super.onInterceptTouchEvent(ev)
     }
 

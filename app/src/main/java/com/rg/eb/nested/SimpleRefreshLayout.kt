@@ -54,7 +54,6 @@ class SimpleRefreshLayout : EasyRefreshLayout {
         headBearAnim.repeatCount = Animation.INFINITE
         val typeArray = context.obtainStyledAttributes(attributeSet,R.styleable.SimpleRefreshLayout)
         targetViewId = typeArray.getResourceId(R.styleable.SimpleRefreshLayout_targetViewId,-1)
-        "targetViewId =$targetViewId".log(TAG)
     }
     override var targetViewId: Int
 
