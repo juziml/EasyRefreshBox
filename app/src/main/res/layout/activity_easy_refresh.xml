@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="未开始"
+        android:text="下拉区域"
         android:elevation="-2dp"
         android:background="#ae8080"
         android:layout_height="100dp"/>
@@ -30,8 +30,7 @@
         android:id="@+id/aer_fl_bottom"
         android:layout_width="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toLeftOf="parent"
-        android:text="未开始"
+        android:text="上拉区域"
         android:elevation="-2dp"
         android:background="#ce0808"
         android:layout_height="100dp"/>
